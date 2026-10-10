@@ -876,10 +876,41 @@ export class BootScene extends Phaser.Scene {
     const requestId = ++this.remoteLevelRequestId;
     this.preparedLevel = undefined;
     this.preparedAvatarImage = undefined;
-    this.preparedAvatarResolved = true;
+    this.preparedAvatarResolved = false;
     const generationWish = wishText.trim() || "I wish for a new path";
 
-    void generateRemoteLevel(generationWish, plan).then((level) => {
+    void generateRemoteLevel(generationWish, plan, ({ designSeed, appearancePrompt }) => {
+      if (
+        requestId !== this.remoteLevelRequestId ||
+        this.levelTwoPlan ||
+        !this.scene.isActive()
+      ) {
+        return;
+      }
+      this.statusText?.setText("Outdoor formed — dungeon and hero are taking shape…");
+      void generateRemoteAvatar(
+        generationWish,
+        designSeed,
+        appearancePrompt,
+      ).then((imageDataUrl) => {
+        if (
+          requestId !== this.remoteLevelRequestId ||
+          this.levelTwoPlan ||
+          !this.scene.isActive()
+        ) {
+          return;
+        }
+        this.preparedAvatarImage = imageDataUrl ?? undefined;
+        this.preparedAvatarResolved = true;
+        this.statusText?.setText(
+          this.preparedLevel
+            ? `${this.preparedLevel.name} ready — enter the Wishing Gate.`
+            : imageDataUrl
+              ? "Your new form is ready — dungeon still forming…"
+              : "Hero image unavailable — dungeon still forming…",
+        );
+      });
+    }).then((level) => {
       if (
         requestId !== this.remoteLevelRequestId ||
         this.levelTwoPlan ||
@@ -891,25 +922,13 @@ export class BootScene extends Phaser.Scene {
 
       if (level) {
         this.preparedLevel = level;
-        this.preparedAvatarResolved = false;
-        this.statusText?.setText(`${level.name} formed — shaping your hero…`);
-        void generateRemoteAvatar(generationWish, level).then((imageDataUrl) => {
-          if (
-            requestId !== this.remoteLevelRequestId ||
-            this.levelTwoPlan ||
-            !this.scene.isActive()
-          ) {
-            return;
-          }
-          this.preparedAvatarImage = imageDataUrl ?? undefined;
-          this.preparedAvatarResolved = true;
-          this.statusText?.setText(
-            imageDataUrl
-              ? `${level.name} and your new form are ready.`
-              : `${level.name} ready — Soldier art used as fallback.`,
-          );
-        });
+        this.statusText?.setText(
+          this.preparedAvatarResolved
+            ? `${level.name} ready — enter the Wishing Gate.`
+            : `${level.name} ready — hero image is optional and still forming.`,
+        );
       } else {
+        this.preparedAvatarResolved = true;
         this.statusText?.setText(`${plan.title} ready — the proven path awaits.`);
       }
     });
@@ -936,11 +955,6 @@ export class BootScene extends Phaser.Scene {
       this.openWishDialog();
       return;
     }
-    if (this.preparedLevel && !this.preparedAvatarResolved) {
-      this.statusText?.setText("Your generated hero is still taking shape…");
-      return;
-    }
-
     this.physics.pause();
     this.scene.restart({
       plan: this.preparedWishPlan,

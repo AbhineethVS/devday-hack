@@ -2,8 +2,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import {
-  generatedAdventureSchema,
+  generatedDungeonSchema,
+  generatedOutdoorSchema,
   validateGeneratedAdventure,
+  validateGeneratedDungeon,
+  validateGeneratedOutdoor,
 } from "./adventure-contract.mjs";
 
 const port = Number(process.env.PORT ?? 3001);
@@ -166,6 +169,18 @@ function validateOutcome(outcome) {
     throw new Error("Outcome must be flight or fire.");
   }
   return outcome;
+}
+
+function validateDesignSeed(value) {
+  if (
+    typeof value !== "string" ||
+    value.length < 8 ||
+    value.length > 80 ||
+    !/^[a-zA-Z0-9-]+$/.test(value)
+  ) {
+    throw new Error("Design seed is invalid.");
+  }
+  return value;
 }
 
 function validateAppearancePrompt(value) {
@@ -469,12 +484,21 @@ async function createWishPlan(wish) {
   return validateModelPlan(JSON.parse(outputText));
 }
 
-async function createGeneratedAdventure(wish, outcome) {
+async function requestGeneratedPart({
+  wish,
+  outcome,
+  designSeed,
+  task,
+  schemaName,
+  schema,
+  instructions,
+  maximumTokens,
+  validate,
+}) {
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
-  const designSeed = randomUUID();
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -486,43 +510,82 @@ async function createGeneratedAdventure(wish, outcome) {
       input: [
         {
           role: "system",
-          content: `${mapSkill}\n\n${mapLevelFormat}\n\nThe server will reject unsafe or unsupported adventures. Copy the requested designSeed exactly. Author the outdoor route and its one nested dungeon together. Choose either a huge bounded orc wave encounter or one giant orc boss.`,
+          content: `${mapSkill}\n\n${mapLevelFormat}\n\n${instructions}\nThe server will reject unsafe or unsupported placement. Copy the requested designSeed exactly.`,
         },
         {
           role: "user",
           content: JSON.stringify({
-            task: "Design one complete Wishbound outdoor-to-dungeon adventure.",
+            task,
             wish,
             outcome,
             designSeed,
           }),
         },
       ],
-      max_output_tokens: 7_200,
+      max_output_tokens: maximumTokens,
       store: false,
       text: {
         format: {
           type: "json_schema",
-          name: "generated_adventure",
+          name: schemaName,
           strict: true,
-          schema: generatedAdventureSchema,
+          schema,
         },
       },
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(48_000),
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI map request failed with status ${response.status}.`);
+    throw new Error(`OpenAI ${schemaName} request failed with status ${response.status}.`);
   }
 
   const payload = await response.json();
   const outputText = extractOutputText(payload);
   if (!outputText) {
-    throw new Error("OpenAI map response did not include structured output text.");
+    throw new Error(`OpenAI ${schemaName} response did not include structured output text.`);
   }
 
-  return validateGeneratedAdventure(JSON.parse(outputText), designSeed);
+  return validate(JSON.parse(outputText), designSeed);
+}
+
+function createGeneratedOutdoor(wish, outcome, designSeed) {
+  return requestGeneratedPart({
+    wish,
+    outcome,
+    designSeed,
+    task: "Design only the outdoor half of one Wishbound adventure and its wish-avatar description.",
+    schemaName: "generated_outdoor",
+    schema: generatedOutdoorSchema,
+    instructions:
+      "Return only the root metadata, avatar, and outdoor fields requested by the schema. Do not design a dungeon. Ensure every prop, orc, checkpoint, and portal is supported by the ordered terrain.",
+    maximumTokens: 4_000,
+    validate: validateGeneratedOutdoor,
+  });
+}
+
+function createGeneratedDungeon(wish, outcome, designSeed) {
+  return requestGeneratedPart({
+    wish,
+    outcome,
+    designSeed,
+    task: "Design only the dungeon half of one Wishbound adventure.",
+    schemaName: "generated_dungeon",
+    schema: generatedDungeonSchema,
+    instructions:
+      "Return only designSeed and dungeon. Do not design an outdoor map or avatar. Put the encounter arena on one continuous broad terrain strip and the supported exit after that arena.",
+    maximumTokens: 3_600,
+    validate: validateGeneratedDungeon,
+  });
+}
+
+async function createGeneratedAdventure(wish, outcome) {
+  const designSeed = randomUUID();
+  const [outdoor, dungeon] = await Promise.all([
+    createGeneratedOutdoor(wish, outcome, designSeed),
+    createGeneratedDungeon(wish, outcome, designSeed),
+  ]);
+  return validateGeneratedAdventure({ ...outdoor, dungeon: dungeon.dungeon }, designSeed);
 }
 
 async function createAvatarImage(wish, appearancePrompt) {
@@ -627,6 +690,28 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (request.url === "/api/outdoor") {
+      const designSeed = validateDesignSeed(body.designSeed);
+      const outdoor = await createGeneratedOutdoor(
+        wish,
+        validateOutcome(body.outcome),
+        designSeed,
+      );
+      sendJson(response, 200, outdoor);
+      return;
+    }
+
+    if (request.url === "/api/dungeon") {
+      const designSeed = validateDesignSeed(body.designSeed);
+      const dungeon = await createGeneratedDungeon(
+        wish,
+        validateOutcome(body.outcome),
+        designSeed,
+      );
+      sendJson(response, 200, dungeon);
+      return;
+    }
+
     if (request.url === "/api/avatar") {
       const avatar = await createAvatarImage(
         wish,
@@ -638,7 +723,7 @@ const server = createServer(async (request, response) => {
 
     sendJson(response, 404, { error: "Not found." });
   } catch (error) {
-    const operation = request.url === "/api/level"
+    const operation = ["/api/level", "/api/outdoor", "/api/dungeon"].includes(request.url)
       ? "Map generation"
       : request.url === "/api/avatar"
         ? "Avatar generation"
@@ -646,7 +731,7 @@ const server = createServer(async (request, response) => {
     console.error(`${operation} failed:`, error instanceof Error ? error.message : error);
     const status = error instanceof Error && error.message.includes("not configured") ? 503 : 502;
     sendJson(response, status, {
-      error: request.url === "/api/level"
+      error: ["/api/level", "/api/outdoor", "/api/dungeon"].includes(request.url)
         ? "AI map generation is unavailable."
         : request.url === "/api/avatar"
           ? "AI avatar generation is unavailable."

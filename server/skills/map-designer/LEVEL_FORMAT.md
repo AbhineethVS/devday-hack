@@ -1,9 +1,10 @@
 # GeneratedAdventure version 2
 
 The live game supports one generated outdoor route linked to one generated
-dungeon. Phaser owns collision, movement, combat, health, wave timing, boss
-stats, portal locking, and rendering. Model output is placement and composition
-data only.
+dungeon. The API requests those halves in parallel with the same design seed
+and combines them only after each passes its focused validator. Phaser owns
+collision, movement, combat, health, wave timing, boss stats, portal locking,
+and rendering. Model output is placement and composition data only.
 
 ## Root fields
 

@@ -322,6 +322,30 @@ export const generatedAdventureSchema = {
   additionalProperties: false,
 };
 
+export const generatedOutdoorSchema = {
+  type: "object",
+  properties: {
+    version: generatedAdventureSchema.properties.version,
+    mode: generatedAdventureSchema.properties.mode,
+    name: generatedAdventureSchema.properties.name,
+    designSeed: generatedAdventureSchema.properties.designSeed,
+    avatar: generatedAdventureSchema.properties.avatar,
+    outdoor: generatedAdventureSchema.properties.outdoor,
+  },
+  required: ["version", "mode", "name", "designSeed", "avatar", "outdoor"],
+  additionalProperties: false,
+};
+
+export const generatedDungeonSchema = {
+  type: "object",
+  properties: {
+    designSeed: generatedAdventureSchema.properties.designSeed,
+    dungeon: generatedAdventureSchema.properties.dungeon,
+  },
+  required: ["designSeed", "dungeon"],
+  additionalProperties: false,
+};
+
 const aligned = (value) => Number.isInteger(value) && value % 16 === 0;
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const inRange = (array, minimum, maximum) => Array.isArray(array) && array.length >= minimum && array.length <= maximum;
@@ -470,17 +494,57 @@ function validateOutdoor(candidate) {
 
 function validateEncounter(candidate, terrain, worldWidth) {
   check(isObject(candidate) && ["wave", "boss"].includes(candidate.type) && isObject(candidate.arena), "Dungeon encounter is invalid.");
-  const arena = candidate.arena;
+  const requestedArena = candidate.arena;
+  let arenaStrip = terrain.find(
+    (strip) =>
+      strip.y === requestedArena.surfaceY &&
+      requestedArena.left >= strip.x + 16 &&
+      requestedArena.right <= strip.x + strip.widthInTiles * 16 - 16 &&
+      requestedArena.right - requestedArena.left >= 320,
+  );
+  if (!arenaStrip) {
+    arenaStrip = terrain
+      .filter(
+        (strip) =>
+          strip.widthInTiles * 16 >= 352 &&
+          strip.x + 16 <= worldWidth - 512,
+      )
+      .sort((left, right) => right.widthInTiles - left.widthInTiles)[0];
+  }
+  check(arenaStrip, "Dungeon needs one broad encounter strip.");
+  const maximumArenaRight = Math.min(
+    arenaStrip.x + arenaStrip.widthInTiles * 16 - 16,
+    worldWidth - 192,
+  );
+  const arenaLeft = Math.max(
+    256,
+    arenaStrip.x + 16,
+    aligned(requestedArena.left) ? requestedArena.left : arenaStrip.x + 32,
+  );
+  const arenaRight = Math.min(
+    maximumArenaRight,
+    aligned(requestedArena.right) ? requestedArena.right : arenaLeft + 320,
+  );
+  const arena = {
+    left: Math.min(arenaLeft, maximumArenaRight - 320),
+    right: Math.max(arenaRight, Math.min(arenaLeft, maximumArenaRight - 320) + 320),
+    surfaceY: arenaStrip.y,
+  };
   check(
-    aligned(arena.left) && aligned(arena.right) && surfaceYs.includes(arena.surfaceY) &&
-    arena.right - arena.left >= 320 && arena.left >= 256 && arena.right <= worldWidth - 192,
+    arena.left >= 256 && arena.right <= worldWidth - 192 &&
+    arena.right - arena.left >= 320,
     "Dungeon arena is invalid.",
   );
-  check(terrain.some((strip) => strip.y === arena.surfaceY && arena.left >= strip.x + 16 && arena.right <= strip.x + strip.widthInTiles * 16 - 16), "Dungeon arena is unsupported.");
   check(inRange(candidate.spawnPoints, 2, 6), "Dungeon spawn points are invalid.");
   const spawnPoints = candidate.spawnPoints.map((item, index) => {
-    check(isObject(item) && aligned(item.x) && Number.isInteger(item.y) && item.x >= arena.left + 32 && item.x <= arena.right - 32 && item.y === arena.surfaceY - 56, `Dungeon spawn point ${index} is invalid.`);
-    return { x: item.x, y: item.y };
+    check(isObject(item), `Dungeon spawn point ${index} is invalid.`);
+    const fallbackX = arena.left + 32 +
+      Math.floor(((arena.right - arena.left - 64) * index) / Math.max(1, candidate.spawnPoints.length - 1) / 16) * 16;
+    const requestedX = aligned(item.x) ? item.x : fallbackX;
+    return {
+      x: Math.min(Math.max(requestedX, arena.left + 32), arena.right - 32),
+      y: arena.surfaceY - 56,
+    };
   });
 
   if (candidate.type === "wave") {
@@ -497,8 +561,19 @@ function validateEncounter(candidate, terrain, worldWidth) {
 
   check(Array.isArray(candidate.waves) && candidate.waves.length === 0 && isObject(candidate.boss), "Boss encounter shape is invalid.");
   const boss = candidate.boss;
-  check(aligned(boss.x) && Number.isInteger(boss.y) && boss.x >= arena.left + 64 && boss.x <= arena.right - 64 && boss.y === arena.surfaceY - 56 && typeof boss.title === "string" && boss.title.trim().length > 0 && boss.title.length <= 24, "Dungeon boss is invalid.");
-  return { type: "boss", arena: { ...arena }, spawnPoints, waves: [], boss: { x: boss.x, y: boss.y, title: boss.title.trim() } };
+  check(typeof boss.title === "string" && boss.title.trim().length > 0 && boss.title.length <= 24, "Dungeon boss is invalid.");
+  const bossX = aligned(boss.x) ? boss.x : arena.left + Math.floor((arena.right - arena.left) / 32) * 16;
+  return {
+    type: "boss",
+    arena: { ...arena },
+    spawnPoints,
+    waves: [],
+    boss: {
+      x: Math.min(Math.max(bossX, arena.left + 64), arena.right - 64),
+      y: arena.surfaceY - 56,
+      title: boss.title.trim(),
+    },
+  };
 }
 
 function validateDungeon(candidate) {
@@ -529,15 +604,36 @@ function validateDungeon(candidate) {
   });
 
   const encounter = validateEncounter(candidate.encounter, terrain, worldWidth);
-  check(isObject(candidate.exit) && aligned(candidate.exit.x) && surfaceYs.includes(candidate.exit.surfaceY) && candidate.exit.x > encounter.arena.right && candidate.exit.x <= worldWidth - 32 && support(terrain, candidate.exit.x, candidate.exit.surfaceY), "Dungeon exit is invalid.");
+  check(isObject(candidate.exit), "Dungeon exit is invalid.");
+  let exitX = aligned(candidate.exit.x) ? candidate.exit.x : encounter.arena.right + 32;
+  let exitStrip = support(terrain, exitX, candidate.exit.surfaceY);
+  if (!exitStrip || exitX <= encounter.arena.right) {
+    exitStrip = [...terrain].reverse().find(
+      (strip) => strip.x + strip.widthInTiles * 16 - 16 > encounter.arena.right + 16,
+    );
+    check(exitStrip, "Dungeon exit has no supported terrain after the arena.");
+    exitX = Math.max(exitStrip.x + 16, encounter.arena.right + 32);
+    exitX = Math.ceil(exitX / 16) * 16;
+  }
+  check(
+    exitX <= exitStrip.x + exitStrip.widthInTiles * 16 - 16 &&
+    exitX <= worldWidth - 32,
+    "Dungeon exit is invalid.",
+  );
   return {
     name: candidate.name.trim(), worldWidth, spawn, terrain, decorations, torches,
     hazards, checkpoints, encounter,
-    exit: { x: candidate.exit.x, surfaceY: candidate.exit.surfaceY },
+    exit: { x: exitX, surfaceY: exitStrip.y },
   };
 }
 
 export function validateGeneratedAdventure(candidate, expectedSeed) {
+  const outdoor = validateGeneratedOutdoor(candidate, expectedSeed);
+  const dungeon = validateGeneratedDungeon(candidate, expectedSeed);
+  return { ...outdoor, dungeon: dungeon.dungeon };
+}
+
+export function validateGeneratedOutdoor(candidate, expectedSeed) {
   check(
     isObject(candidate) && candidate.version === 2 && candidate.mode === "adventure" &&
     typeof candidate.name === "string" && candidate.name.trim().length > 0 &&
@@ -559,6 +655,16 @@ export function validateGeneratedAdventure(candidate, expectedSeed) {
       mechanic: candidate.avatar.mechanic,
     },
     outdoor: validateOutdoor(candidate.outdoor),
+  };
+}
+
+export function validateGeneratedDungeon(candidate, expectedSeed) {
+  check(
+    isObject(candidate) && candidate.designSeed === expectedSeed,
+    "Model returned an invalid generated dungeon.",
+  );
+  return {
+    designSeed: expectedSeed,
     dungeon: validateDungeon(candidate.dungeon),
   };
 }

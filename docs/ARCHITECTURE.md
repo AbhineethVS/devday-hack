@@ -68,12 +68,14 @@ server/
 ## Scene and state rules
 
 - `BootScene` owns preload, animation definitions, both level states, collision assembly, and wish hand-off. Level 1 placement data stays separate in `game/levels/levelOne.ts`.
-- Level 1 asks for a wish, stores the interpreted `WishPlan`, and starts `/api/level` without blocking gameplay. A changed remote outcome invalidates the first request and starts a matching generation request.
-- The server reads the project-owned map-design skill, supplies a random design
-  seed, and requests one strict `GeneratedAdventure` v2 object. One Responses
-  API call authors a wish-specific avatar description, one bounded mechanic
-  preset, the outdoor area, its one portal, the nested dungeon, and either
-  waves or a boss.
+- Level 1 asks for a wish, stores the interpreted `WishPlan`, and starts
+  `/api/outdoor` and `/api/dungeon` concurrently without blocking gameplay. A
+  changed remote outcome invalidates both requests and starts matching ones
+  with a new shared design seed.
+- The focused outdoor response authors the avatar description, bounded mechanic,
+  Grassland route, and portal. The focused dungeon response independently
+  authors its route and wave-or-boss encounter. The browser combines them only
+  when both server-validated halves carry the same design seed.
 - Server and browser validators independently check semantic allowlists, exact
   seed matching on the server, 16 px alignment, ordered reachable terrain,
   bounds, supported scenery/checkpoints/enemies, arena width/support, hazard
@@ -86,9 +88,10 @@ server/
   renders only known Grassland keys, and
   transitions through its single portal by restarting the scene into the
   nested dungeon while preserving the plan and validated adventure.
-- Level 1 always uses the existing animated Soldier. After adventure validation,
-  the browser asks `/api/avatar` for one transparent PNG based on the exact wish
-  and validated appearance prompt. The server wraps that input in fixed
+- Level 1 always uses the existing animated Soldier. As soon as the outdoor half
+  validates, the browser starts `/api/avatar` in parallel with the remaining
+  dungeon work. The Wishing Gate never waits for this optional image. The
+  server wraps the exact wish and validated appearance prompt in fixed
   single-character pixel-art constraints and keeps a bounded in-memory cache;
   the browser deduplicates requests by design seed.
 - On Level 2 scene preload, Phaser loads the validated PNG data URL under a
@@ -109,7 +112,11 @@ server/
 - Level 1 terrain uses verified edge/corner frames from the 47-tile sheet with rectangular Arcade bodies. One-tile platforms and the wooden bridge collide from above only, so elevated routes do not block lower paths.
 - Invisible section triggers update the Player respawn point at six safe clearings. Water reuses the normal respawn path; no save data is persisted.
 - `applyWish` can only select mechanics/assets represented in `catalog.ts`. It cannot create arbitrary sprites, physics values, or scripts.
-- `server/index.mjs` is the only component that reads `OPENAI_API_KEY`. `/api/wish` returns the allowlisted outcome and display text; `/api/level` returns validated map data. Neither endpoint returns executable instructions.
+- `server/index.mjs` is the only component that reads `OPENAI_API_KEY`.
+  `/api/wish` returns the allowlisted outcome and display text;
+  `/api/outdoor` and `/api/dungeon` return separately validated map halves.
+  The combined `/api/level` route remains for compatibility. No endpoint
+  returns executable instructions.
 
 ## Asset conventions
 

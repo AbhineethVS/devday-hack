@@ -5,9 +5,10 @@ description: Designs safe Wishbound outdoor-to-dungeon adventures from allowlist
 
 # Wishbound Map Designer
 
-Generate one complete side-scrolling adventure as structured data: one decorated
-Grassland route, one entrance portal, and one nested dungeon with an encounter
-and locked exit.
+Generate the requested half of one side-scrolling adventure as structured data.
+The server requests the decorated Grassland route and the nested dungeon in two
+parallel calls with the same design seed, then validates and combines them.
+Return only the fields in the supplied schema for the requested task.
 
 ## Non-negotiable rules
 

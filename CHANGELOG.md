@@ -4,6 +4,32 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T04:26:00+05:30 — Split and unblock live adventure generation
+
+- Changed: Replaced the single 7,200-token adventure request with parallel
+  `/api/outdoor` and `/api/dungeon` structured requests sharing one design
+  seed. Avatar generation now starts as soon as the outdoor half validates and
+  never blocks entry into a ready generated level.
+- Changed: Added focused server schemas/validators for each half and safely
+  normalizes a model-authored dungeon arena, spawn points, boss position, and
+  exit onto broad supported terrain instead of rejecting the complete
+  adventure for recoverable coordinate drift.
+- Why: Live combined requests were slow and repeatedly discarded valid outdoor
+  work when one dungeon cross-field placement missed its supporting strip.
+- Affected: `server/index.mjs`, `server/adventure-contract.mjs`,
+  `server/adventure-contract.test.mjs`, `server/skills/map-designer/`,
+  `src/wishes/generateRemoteLevel.ts`, `src/wishes/generateRemoteAvatar.ts`,
+  `src/game/scenes/BootScene.ts`, `README.md`, `docs/ARCHITECTURE.md`,
+  `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: The focused live outdoor request returned HTTP 200 in 36.6
+  seconds. The first focused dungeon request returned in 31.0 seconds and
+  exposed an unsupported-arena rejection, which is now covered by a
+  normalization fixture. `npm test` passes all eight contract tests and
+  `npm run build` passes with only the existing Phaser chunk-size warning.
+- Limitations: A second live dungeon request could not be completed before
+  handoff because a fresh Windows Node server process remained stuck before
+  its listening message; restart the normal API process before browser review.
+
 ## 2026-10-11T03:38:00+05:30 — Add AI-authored dungeon adventures and wish avatars
 
 - Changed: Replaced the generated-map runtime with a strict version 2 adventure

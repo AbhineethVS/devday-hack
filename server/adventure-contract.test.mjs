@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateGeneratedAdventure } from "./adventure-contract.mjs";
+import {
+  validateGeneratedAdventure,
+  validateGeneratedDungeon,
+  validateGeneratedOutdoor,
+} from "./adventure-contract.mjs";
 
 const seed = "fixture-seed-001";
 
@@ -126,6 +130,28 @@ test("accepts the giant boss branch", () => {
   assert.equal(result.avatar.mechanic, "airDash");
 });
 
+test("validates independently generated outdoor and dungeon halves", () => {
+  const adventure = makeAdventure("wave");
+  const outdoor = validateGeneratedOutdoor({
+    version: adventure.version,
+    mode: adventure.mode,
+    name: adventure.name,
+    designSeed: adventure.designSeed,
+    avatar: adventure.avatar,
+    outdoor: adventure.outdoor,
+  }, seed);
+  const dungeon = validateGeneratedDungeon({
+    designSeed: adventure.designSeed,
+    dungeon: adventure.dungeon,
+  }, seed);
+  const combined = validateGeneratedAdventure(
+    { ...outdoor, dungeon: dungeon.dungeon },
+    seed,
+  );
+  assert.equal(combined.outdoor.portal.x, 1408);
+  assert.equal(combined.dungeon.name, "Fixture Crypt");
+});
+
 test("rejects a mismatched design seed", () => {
   assert.throws(
     () => validateGeneratedAdventure(makeAdventure("wave"), "different-seed"),
@@ -180,4 +206,31 @@ test("normalizes safe checkpoint and patrol metadata onto supporting terrain", (
     patrolLeft: 784,
     patrolRight: 816,
   });
+});
+
+test("normalizes a model arena that spans unsupported terrain", () => {
+  const adventure = makeAdventure("boss");
+  adventure.dungeon.encounter.arena = {
+    left: 544,
+    right: 1056,
+    surfaceY: 160,
+  };
+  adventure.dungeon.encounter.spawnPoints = [
+    { x: 560, y: 12 },
+    { x: 1088, y: 12 },
+  ];
+  adventure.dungeon.encounter.boss = {
+    x: 1088,
+    y: 12,
+    title: "Gorath the Huge",
+  };
+  adventure.dungeon.exit = { x: 1056, surfaceY: 160 };
+  const result = validateGeneratedAdventure(adventure, seed);
+  assert.deepEqual(result.dungeon.encounter.arena, {
+    left: 592,
+    right: 1056,
+    surfaceY: 176,
+  });
+  assert.equal(result.dungeon.encounter.boss.y, 120);
+  assert.ok(result.dungeon.exit.x > result.dungeon.encounter.arena.right);
 });

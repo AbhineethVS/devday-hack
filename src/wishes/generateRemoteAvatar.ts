@@ -1,5 +1,3 @@
-import type { GeneratedAdventure } from "../game/levels/generatedLevel";
-
 type AvatarResponse = {
   imageDataUrl?: unknown;
   cacheHit?: unknown;
@@ -21,9 +19,10 @@ function isPngDataUrl(value: unknown): value is string {
 
 export function generateRemoteAvatar(
   wishText: string,
-  adventure: GeneratedAdventure,
+  designSeed: string,
+  appearancePrompt: string,
 ): Promise<string | null> {
-  const existing = avatarCache.get(adventure.designSeed);
+  const existing = avatarCache.get(designSeed);
   if (existing) {
     return existing;
   }
@@ -35,7 +34,7 @@ export function generateRemoteAvatar(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           wish: wishText.trim() || "I wish for a transformed hero",
-          appearancePrompt: adventure.avatar.appearancePrompt,
+          appearancePrompt,
         }),
         signal: AbortSignal.timeout(95_000),
       });
@@ -48,6 +47,6 @@ export function generateRemoteAvatar(
       return null;
     }
   })();
-  avatarCache.set(adventure.designSeed, request);
+  avatarCache.set(designSeed, request);
   return request;
 }

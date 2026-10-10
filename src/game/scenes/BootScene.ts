@@ -77,6 +77,8 @@ export class BootScene extends Phaser.Scene {
   private preparedWishPlan?: WishPlan;
   private preparedLevel?: GeneratedAdventure;
   private levelTwoAvatarImage?: string;
+  private levelTwoWishText?: string;
+  private preparedWishText?: string;
   private preparedAvatarImage?: string;
   private preparedAvatarResolved = true;
   private remoteWishRequestId = 0;
@@ -105,13 +107,16 @@ export class BootScene extends Phaser.Scene {
     level?: GeneratedAdventure;
     area?: "outdoor" | "dungeon";
     avatarImage?: string;
+    wishText?: string;
   }): void {
     this.levelTwoPlan = data.plan;
     this.levelTwoMap = data.level;
     this.adventureArea = data.area ?? "outdoor";
     this.levelTwoAvatarImage = data.avatarImage;
+    this.levelTwoWishText = data.wishText;
     this.preparedWishPlan = undefined;
     this.preparedLevel = undefined;
+    this.preparedWishText = undefined;
     this.preparedAvatarImage = undefined;
     this.preparedAvatarResolved = true;
     this.player = undefined;
@@ -878,6 +883,7 @@ export class BootScene extends Phaser.Scene {
     this.preparedAvatarImage = undefined;
     this.preparedAvatarResolved = false;
     const generationWish = wishText.trim() || "I wish for a new path";
+    this.preparedWishText = generationWish;
 
     void generateRemoteLevel(generationWish, plan, ({ designSeed, appearancePrompt }) => {
       if (
@@ -960,6 +966,7 @@ export class BootScene extends Phaser.Scene {
       plan: this.preparedWishPlan,
       level: this.preparedLevel,
       avatarImage: this.preparedAvatarImage,
+      wishText: this.preparedWishText,
     });
   }
 
@@ -1284,7 +1291,44 @@ export class BootScene extends Phaser.Scene {
     }
     if (this.levelTwoAvatarImage) {
       player.useGeneratedAppearance(this.generatedAvatarTextureKey());
+    } else {
+      this.loadGeneratedHeroAppearance(player);
     }
+  }
+
+  private loadGeneratedHeroAppearance(player: Player): void {
+    if (!this.levelTwoMap || !this.levelTwoWishText) {
+      return;
+    }
+
+    const textureKey = this.generatedAvatarTextureKey();
+    if (this.textures.exists(textureKey)) {
+      player.useGeneratedAppearance(textureKey);
+      return;
+    }
+
+    void generateRemoteAvatar(
+      this.levelTwoWishText,
+      this.levelTwoMap.designSeed,
+      this.levelTwoMap.avatar.appearancePrompt,
+    ).then((imageDataUrl) => {
+      if (!imageDataUrl || !this.scene.isActive() || !this.player) {
+        return;
+      }
+      this.levelTwoAvatarImage = imageDataUrl;
+      if (this.textures.exists(textureKey)) {
+        this.player.useGeneratedAppearance(textureKey);
+        return;
+      }
+      this.load.image(textureKey, imageDataUrl);
+      this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+        if (this.scene.isActive()) {
+          this.player?.useGeneratedAppearance(textureKey);
+          this.statusText?.setText("Your generated form is ready.");
+        }
+      });
+      this.load.start();
+    });
   }
 
   private createWishRoute(plan: WishPlan): Phaser.GameObjects.Zone[] {
@@ -1440,6 +1484,7 @@ export class BootScene extends Phaser.Scene {
       level: this.levelTwoMap,
       area: "dungeon",
       avatarImage: this.levelTwoAvatarImage,
+      wishText: this.levelTwoWishText,
     });
   }
 
@@ -1629,6 +1674,7 @@ export class BootScene extends Phaser.Scene {
         level: this.levelTwoMap,
         area: "outdoor",
         avatarImage: this.levelTwoAvatarImage,
+        wishText: this.levelTwoWishText,
       }),
     );
   }

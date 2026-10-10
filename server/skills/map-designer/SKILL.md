@@ -71,8 +71,9 @@ Use these conservative mandatory limits:
 - Every prop Y and portal `surfaceY` must exactly equal its terrain surface.
 - Every checkpoint trigger and spawn X must be inside the same terrain strip,
   and `spawnY = supportingSurfaceY - 40`.
-- The encounter arena must be one continuous supported strip at least 320 px
-  wide. Keep spawn points at least 32 px inside it.
+- Prefer one continuous supported arena at least 320 px wide. The engine can
+  normalize smaller broad strips when needed, but never split an arena across
+  gaps. Keep spawn points at least 32 px inside it.
 - Wave encounters use 2–3 rounds of 3–6 orcs, no more than 15 total.
 - Boss encounters use one boss object and an empty waves array.
 - Put the dungeon exit on supported terrain after the arena.

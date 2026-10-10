@@ -70,7 +70,8 @@ The prop Y value must equal the surface Y of the supporting terrain strip.
   and `rubble`.
 - `torches`: animated wall accents using 16 px aligned positions.
 - `hazards`: supported spike runs, 1–4 tiles each.
-- `encounter.arena`: continuous terrain at least 320 px wide.
+- `encounter.arena`: continuous terrain, preferably at least 320 px wide.
+  The validator may normalize safe smaller arenas onto supported terrain.
 - `encounter.spawnPoints`: 2–6 supported points inside the arena.
 - For `type: "wave"`, set `boss` to `null` and provide 2–3 waves. Each wave's
   `spawnPointIndexes` length must equal `count`.

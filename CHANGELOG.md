@@ -4,6 +4,29 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T05:00:00+05:30 — Make wish avatars apply reliably
+
+- Changed: Level 2 and dungeon scenes now retry the wish-avatar request and
+  hot-load the PNG texture if the player entered before image generation
+  finished. The image swap no longer depends on the PNG being ready during the
+  scene restart.
+- Changed: Simplified the image prompt, added a medium-quality retry path after
+  image HTTP 400 responses, and logs the upstream error body for diagnosis.
+- Changed: Relaxed dungeon encounter normalization so a generated dungeon with
+  a smaller broad strip still gets a safe playable arena instead of dropping the
+  whole adventure.
+- Why: The generated character sometimes appeared only when the image completed
+  before entering Level 2; reloads or slow/failed image requests fell back to
+  the Soldier permanently.
+- Affected: `server/index.mjs`, `server/adventure-contract.mjs`,
+  `server/skills/map-designer/`, `src/game/scenes/BootScene.ts`,
+  `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm test` passed all eight contract tests, `npm run build`
+  passed with the existing Phaser chunk warning, and IDE diagnostics reported
+  no errors for the edited code.
+- Limitations: If the image API rejects both attempts, gameplay still uses the
+  Soldier fallback; the server log now includes the upstream image error.
+
 ## 2026-10-11T04:26:00+05:30 — Split and unblock live adventure generation
 
 - Changed: Replaced the single 7,200-token adventure request with parallel

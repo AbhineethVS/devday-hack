@@ -350,6 +350,7 @@ const aligned = (value) => Number.isInteger(value) && value % 16 === 0;
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const inRange = (array, minimum, maximum) => Array.isArray(array) && array.length >= minimum && array.length <= maximum;
 const maxGap = (rise) => rise <= 0 ? 64 : rise <= 16 ? 48 : rise <= 32 ? 32 : rise <= 48 ? 16 : -1;
+const minimumArenaWidth = 192;
 
 function check(condition, message) {
   if (!condition) throw new Error(message);
@@ -500,14 +501,14 @@ function validateEncounter(candidate, terrain, worldWidth) {
       strip.y === requestedArena.surfaceY &&
       requestedArena.left >= strip.x + 16 &&
       requestedArena.right <= strip.x + strip.widthInTiles * 16 - 16 &&
-      requestedArena.right - requestedArena.left >= 320,
+      requestedArena.right - requestedArena.left >= minimumArenaWidth,
   );
   if (!arenaStrip) {
     arenaStrip = terrain
       .filter(
         (strip) =>
-          strip.widthInTiles * 16 >= 352 &&
-          strip.x + 16 <= worldWidth - 512,
+          strip.widthInTiles * 16 >= minimumArenaWidth + 32 &&
+          strip.x + 16 <= worldWidth - 256,
       )
       .sort((left, right) => right.widthInTiles - left.widthInTiles)[0];
   }
@@ -526,13 +527,16 @@ function validateEncounter(candidate, terrain, worldWidth) {
     aligned(requestedArena.right) ? requestedArena.right : arenaLeft + 320,
   );
   const arena = {
-    left: Math.min(arenaLeft, maximumArenaRight - 320),
-    right: Math.max(arenaRight, Math.min(arenaLeft, maximumArenaRight - 320) + 320),
+    left: Math.min(arenaLeft, maximumArenaRight - minimumArenaWidth),
+    right: Math.max(
+      arenaRight,
+      Math.min(arenaLeft, maximumArenaRight - minimumArenaWidth) + minimumArenaWidth,
+    ),
     surfaceY: arenaStrip.y,
   };
   check(
     arena.left >= 256 && arena.right <= worldWidth - 192 &&
-    arena.right - arena.left >= 320,
+    arena.right - arena.left >= minimumArenaWidth,
     "Dungeon arena is invalid.",
   );
   check(inRange(candidate.spawnPoints, 2, 6), "Dungeon spawn points are invalid.");

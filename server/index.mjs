@@ -600,33 +600,48 @@ async function createAvatarImage(wish, appearancePrompt) {
     return { imageDataUrl: cached, cacheHit: true };
   }
 
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
+  const prompt = [
+    "Transparent-background pixel art game sprite.",
+    "One complete side-view hero, centered, no scenery, no text, no floor, no shadow.",
+    "Readable at 48 pixels tall with crisp fantasy pixels.",
+    "Transform a small armored soldier to match this wish:",
+    wish,
+    "Required visual:",
+    appearancePrompt,
+  ].join(" ");
+
+  const requestImage = (body) => fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(90_000),
+  });
+
+  let response = await requestImage({
       model: imageModel,
-      prompt: [
-        "Create one transparent-background pixel-art game character sprite.",
-        "Show one complete readable side-view hero, centered, with no scenery, text, border, UI, floor, or shadow.",
-        "Use crisp deliberate pixel clusters, a limited high-contrast fantasy palette, and a silhouette readable at 48 pixels tall.",
-        "The base hero is a small armored soldier. Transform the visible hero precisely around this player's wish:",
-        wish,
-        "Required appearance:",
-        appearancePrompt,
-        "Appearance only: do not depict gameplay statistics, controls, or written labels.",
-      ].join(" "),
+      prompt,
       size: "1024x1024",
       quality: "low",
       background: "transparent",
       output_format: "png",
-    }),
-    signal: AbortSignal.timeout(90_000),
   });
   if (!response.ok) {
-    throw new Error(`OpenAI image request failed with status ${response.status}.`);
+    const firstError = await response.text().catch(() => "");
+    response = await requestImage({
+      model: imageModel,
+      prompt,
+      size: "1024x1024",
+      quality: "medium",
+    });
+    if (!response.ok) {
+      const secondError = await response.text().catch(() => "");
+      throw new Error(
+        `OpenAI image request failed with status ${response.status}: ${secondError || firstError}`,
+      );
+    }
   }
   const payload = await response.json();
   const base64 = payload?.data?.[0]?.b64_json;

@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:55:57+05:30 — Add AI-only wish test mode
+
+- Changed: Added `VITE_REQUIRE_AI=true` as an opt-in test mode. It keeps the opening dialog active until the server returns a valid model plan, and shows an error without starting the level if interpretation fails.
+- Why: Let developers verify live generation instead of silently seeing the local fallback.
+- Affected: `src/game/scenes/BootScene.ts`, `.env.example`, and `README.md`.
+- Validation: `npm run build` passed.
+- Limitations: This mode intentionally blocks play when the AI server or key is unavailable; leave it disabled for the reliable offline demo.
+
 ## 2026-10-11T01:46:38+05:30 — Build Milestone 6 optional AI interpreter
 
 - Changed: Added a server-only Responses API endpoint using strict JSON Schema Structured Outputs, a sanitized browser client, development proxy, optional environment configuration, and automatic local-plan fallback. The request begins when the opening dialog is submitted and can update the prepared plan before shrine contact.

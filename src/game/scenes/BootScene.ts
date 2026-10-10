@@ -13,6 +13,7 @@ const tileSize = 16;
 const groundTop = gameHeight - tileSize * 2;
 const terrainTopFrame = 0;
 const terrainFillFrame = 12;
+const requireRemoteWishPlan = import.meta.env.VITE_REQUIRE_AI === "true";
 
 export class BootScene extends Phaser.Scene {
   private player?: Player;
@@ -350,6 +351,7 @@ export class BootScene extends Phaser.Scene {
         <form class="wish-dialog" aria-label="Make a wish">
           <label for="wish-input">THE SHRINE LISTENS</label>
           <p>What do you wish for?</p>
+          <p id="wish-status" aria-live="polite"></p>
           <input id="wish-input" name="wish" maxlength="120" autocomplete="off" placeholder="I wish I could fly" />
           <button type="submit">MAKE WISH</button>
         </form>
@@ -382,8 +384,22 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.isWishTransitioning = true;
+    if (requireRemoteWishPlan) {
+      this.setWishDialogStatus("Shaping your wish…", true);
+      this.requestRemoteWishPlan(wishText, true);
+      return;
+    }
+
     this.preparedWishPlan = interpretLocal(wishText);
-    this.requestRemoteWishPlan(wishText);
+    this.requestRemoteWishPlan(wishText, false);
+    this.closeWishDialog();
+  }
+
+  private closeWishDialog(): void {
+    if (!this.wishDialog || !this.preparedWishPlan) {
+      return;
+    }
+
     const dialog = this.wishDialog;
     this.tweens.add({
       targets: dialog,
@@ -404,26 +420,50 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  private requestRemoteWishPlan(wishText: string): void {
+  private requestRemoteWishPlan(wishText: string, isRequired: boolean): void {
     const requestId = ++this.remoteWishRequestId;
 
     void interpretRemote(wishText)
       .then((plan) => {
-        if (
-          !plan ||
-          requestId !== this.remoteWishRequestId ||
-          this.levelTwoPlan ||
-          !this.scene.isActive()
-        ) {
+        if (requestId !== this.remoteWishRequestId || this.levelTwoPlan || !this.scene.isActive()) {
+          return;
+        }
+
+        if (!plan) {
+          if (isRequired) {
+            this.handleRemoteWishFailure();
+          }
           return;
         }
 
         this.preparedWishPlan = plan;
-        this.statusText?.setText(`${plan.title} ready — reach the shrine.`);
+        if (isRequired) {
+          this.closeWishDialog();
+        } else {
+          this.statusText?.setText(`${plan.title} ready — reach the shrine.`);
+        }
       })
       .catch(() => {
-        // The local plan remains the reliable offline fallback.
+        if (isRequired) {
+          this.handleRemoteWishFailure();
+        }
       });
+  }
+
+  private handleRemoteWishFailure(): void {
+    this.isWishTransitioning = false;
+    this.setWishDialogStatus("AI unavailable — check server and key, then try again.", false);
+  }
+
+  private setWishDialogStatus(message: string, disableSubmit: boolean): void {
+    const status = this.wishDialog?.node.querySelector("#wish-status");
+    const button = this.wishDialog?.node.querySelector("button");
+    if (status) {
+      status.textContent = message;
+    }
+    if (button instanceof HTMLButtonElement) {
+      button.disabled = disableSubmit;
+    }
   }
 
   private enterShrine(): void {

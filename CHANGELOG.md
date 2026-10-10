@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:46:38+05:30 — Build Milestone 6 optional AI interpreter
+
+- Changed: Added a server-only Responses API endpoint using strict JSON Schema Structured Outputs, a sanitized browser client, development proxy, optional environment configuration, and automatic local-plan fallback. The request begins when the opening dialog is submitted and can update the prepared plan before shrine contact.
+- Why: Make broad wish phrasing choose a personalized supported outcome without exposing credentials or permitting generated game code.
+- Affected: `server/index.mjs`, `.env.example`, `src/wishes/interpretRemote.ts`, `src/game/scenes/BootScene.ts`, `vite.config.ts`, `package.json`, `README.md`, and `docs/ARCHITECTURE.md`.
+- Validation: `npm run build` passed. `npm run server` started successfully without a `.env` file; live OpenAI validation was not run because no key was supplied.
+- Limitations: The local server must have `OPENAI_API_KEY` and network access for model interpretation. Any server, network, API, schema, or response failure preserves the deterministic local plan.
+
 ## 2026-10-11T01:30:25+05:30 — Tune Level 2 late-route parkour
 
 - Changed: Replaced the oversized late gaps in both Flight and Fire routes with shorter gaps and two raised stepping platforms before the final portal ground.

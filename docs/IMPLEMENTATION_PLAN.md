@@ -88,6 +88,8 @@ Do not write or evaluate generated game code.
 
 ## Milestone 6 — Optional GPT interpretation
 
+**Status: Complete — client build and local server startup verified on 11 October 2026; a live API call needs a participant-provided key.**
+
 Only begin after the local interpreter is working end-to-end.
 
 - Add a small server endpoint with the API key in `.env` only.

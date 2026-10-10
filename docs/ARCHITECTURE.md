@@ -60,9 +60,10 @@ server/                             # added only after the local flow works
 
 - `BootScene` owns preload and animation definitions. Other scenes only request asset keys; they do not load files themselves.
 - The Level 1 scene asks for a wish before gameplay, stores the locally interpreted `WishPlan`, and continues normally after the dialog closes.
-- Shrine contact transfers the already prepared `WishPlan`; later the local interpreter can be replaced with a validated backend response without changing gameplay state.
+- Shrine contact transfers the already prepared `WishPlan`. The local fallback runs immediately; an optional backend response may replace it only after its outcome ID and display text pass local validation.
 - The Level 2 scene receives a complete `WishPlan` once, calls `applyWish` once, and never evaluates generated code.
 - `applyWish` can only select mechanics/assets represented in `catalog.ts`. It cannot create arbitrary sprites, physics values, or scripts.
+- `server/index.mjs` is the only component that reads `OPENAI_API_KEY`. It requests strict structured output limited to the two catalogue IDs; the browser receives only the validated plan selection and short display text.
 
 ## Asset conventions
 

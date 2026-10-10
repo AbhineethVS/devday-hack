@@ -41,14 +41,16 @@ This template has no application code or required technology stack. The document
 
 1. Prerequisites: Node.js 24 or later and npm.
 2. Install dependencies: `npm install`
-3. Start the local game: `npm run dev`
-4. Create a production build: `npm run build`
+3. Optional AI interpretation: copy `.env.example` to an untracked `.env`, set `OPENAI_API_KEY`, then run `npm run server` in one terminal.
+4. Start the local game in another terminal: `npm run dev`
+5. Create a production build: `npm run build`
 
 ### Current status
 
-- Working features: A wish dialog opens before Level 1, then the Grassland route remains playable while its validated local `WishPlan` is prepared. Reaching the shrine consumes that prepared plan and creates one of two offline outcomes: Flight gives a moonlit route and double jump; Fire gives an ember route and a `C` air dash. Fire-related keywords select Fire; every other wish safely falls back to Flight. The Soldier can also run, make variable-height jumps, attack with `X`, defeat an Orc in three hits, lose one of five health pips on contact, and spend any earned charge with `F` to restore one health.
+- Working features: A wish dialog opens before Level 1, then the Grassland route remains playable while its local fallback plan is prepared. When the optional local server has `OPENAI_API_KEY`, it asks the Responses API to select a structured, allowlisted Flight or Fire plan and to provide a short title and narration; the result replaces the fallback only if it passes local validation before the shrine. Reaching the shrine consumes the prepared plan: Flight gives a moonlit route and double jump; Fire gives an ember route and a `C` air dash. The Soldier can also run, make variable-height jumps, attack with `X`, defeat an Orc in three hits, lose one of five health pips on contact, and spend any earned charge with `F` to restore one health.
 - Demo walkthrough: Refresh the game and submit a wish. Try “I wish for fire” for the Fire route, or any other phrase for Flight. Reach the shrine at the far right, read the personalized narration, then use either the second Up Arrow/Space jump (Flight) or `C` while airborne (Fire) to cross the route and enter the uploaded animated violet portal. Press `R` after the completion message to replay.
-- Known limitations: The keyword interpreter has only Flight and Fire, and all unrecognized wishes fall back to Flight. No API integration, audio, or credits screen exists yet. The code-drawn HUD intentionally does not use the locally supplied Pixel UI Pack 3 because its licence/source record is not available.
+- Known limitations: The model may select only Flight or Fire; if the server, API key, network, model response, or validation fails, the game uses the offline Flight/Fire keyword fallback. The included server is for local development and must be deployed behind the game for a production web build. Audio and credits screen are not implemented. The code-drawn HUD intentionally does not use the locally supplied Pixel UI Pack 3 because its licence/source record is not available.
+- OpenAI implementation: The local server uses the [Responses API Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses) with a strict JSON schema. It never sends API keys to the browser, accepts only the two allowed outcome IDs, and never evaluates model-generated code.
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Execution order: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)

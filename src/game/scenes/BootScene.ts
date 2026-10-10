@@ -5,6 +5,7 @@ import { Orc } from "../entities/Orc";
 import { gameplayKeyCodes, Player } from "../entities/Player";
 import { applyWish } from "../../wishes/applyWish";
 import { interpretLocal } from "../../wishes/interpretLocal";
+import { interpretRemote } from "../../wishes/interpretRemote";
 import type { WishPlan } from "../../wishes/types";
 
 const worldWidth = gameWidth * 3;
@@ -22,6 +23,7 @@ export class BootScene extends Phaser.Scene {
   private lastRespawnAt = Number.NEGATIVE_INFINITY;
   private levelTwoPlan?: WishPlan;
   private preparedWishPlan?: WishPlan;
+  private remoteWishRequestId = 0;
   private wishDialog?: Phaser.GameObjects.DOMElement;
   private isWishTransitioning = false;
   private isNarrationPlaying = false;
@@ -34,6 +36,7 @@ export class BootScene extends Phaser.Scene {
   public init(data: { plan?: WishPlan }): void {
     this.levelTwoPlan = data.plan;
     this.preparedWishPlan = undefined;
+    this.remoteWishRequestId += 1;
     this.isNarrationPlaying = false;
     this.levelComplete = false;
     this.isWishTransitioning = false;
@@ -380,6 +383,7 @@ export class BootScene extends Phaser.Scene {
 
     this.isWishTransitioning = true;
     this.preparedWishPlan = interpretLocal(wishText);
+    this.requestRemoteWishPlan(wishText);
     const dialog = this.wishDialog;
     this.tweens.add({
       targets: dialog,
@@ -398,6 +402,28 @@ export class BootScene extends Phaser.Scene {
         this.physics.resume();
       },
     });
+  }
+
+  private requestRemoteWishPlan(wishText: string): void {
+    const requestId = ++this.remoteWishRequestId;
+
+    void interpretRemote(wishText)
+      .then((plan) => {
+        if (
+          !plan ||
+          requestId !== this.remoteWishRequestId ||
+          this.levelTwoPlan ||
+          !this.scene.isActive()
+        ) {
+          return;
+        }
+
+        this.preparedWishPlan = plan;
+        this.statusText?.setText(`${plan.title} ready — reach the shrine.`);
+      })
+      .catch(() => {
+        // The local plan remains the reliable offline fallback.
+      });
   }
 
   private enterShrine(): void {

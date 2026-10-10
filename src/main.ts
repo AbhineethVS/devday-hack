@@ -2,4 +2,8 @@ import Phaser from "phaser";
 import { gameConfig } from "./game/config";
 import "./style.css";
 
-new Phaser.Game(gameConfig);
+const game = new Phaser.Game(gameConfig);
+
+if (import.meta.env.DEV) {
+  (window as Window & { __wishboundGame?: Phaser.Game }).__wishboundGame = game;
+}

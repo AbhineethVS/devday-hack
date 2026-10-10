@@ -12,6 +12,16 @@ Only files required by the current vertical slice are copied into `public/assets
 - Imported: the Grassland backgrounds, clouds, terrain sheets, props, and animated prop sheets.
 - Exact supplied licence text: [multi-platformer-tileset-CC0.txt](licenses/multi-platformer-tileset-CC0.txt)
 
+Level 1 runtime use:
+
+- The accepted global parallax stack uses Backgrounds 1, 3, 4, and 5; Background 2's opaque maroon band is intentionally excluded from the established palette.
+- The 192 x 64 main terrain sheet is loaded as 48 cells on a 12 x 4 grid. Runtime uses verified rectangle edge/corner frames rather than stretching tiles.
+- The background-terrain sheet supplies low-alpha soil formations. The extra-terrain sheet supplies the wooden bridge pieces and water-fill tile.
+- Cloud 1, 2, and 3 are complete 48 x 16, 64 x 32, and 96 x 32 images.
+- The butterfly, water-bubble, disappearing-bubble, and water-surface sheets use 4, 5, 6, and 10 frames respectively at 16 x 16.
+- Every individual static prop is used across the route. `GrassLand_Details.png` remains unloaded because it is a duplicate presentation sheet containing the same tree, stones, foliage, trunks, and entry art.
+- The three entry PNGs form a restrained four-frame environmental animation. The multi-cell Tree, Stone 3, and Chopped Tree files are rendered as complete images.
+
 ### Tiny RPG Character Asset Pack 01 — free Soldier & Orc
 
 - Source: <https://zerie.itch.io/tiny-rpg-character-asset-pack>

@@ -192,6 +192,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.airDashAvailable = true;
   }
 
+  public setRespawnPoint(x: number, y: number): void {
+    this.spawnPoint.set(x, y);
+  }
+
   public respawn(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.setPosition(this.spawnPoint.x, this.spawnPoint.y);

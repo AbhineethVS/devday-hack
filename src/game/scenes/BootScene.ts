@@ -3,17 +3,54 @@ import { assetKeys, assetPaths } from "../assets";
 import { gameHeight, gameWidth } from "../dimensions";
 import { Orc } from "../entities/Orc";
 import { gameplayKeyCodes, Player } from "../entities/Player";
+import {
+  levelOneBackgroundPatches,
+  levelOneBridges,
+  levelOneBubbles,
+  levelOneButterflies,
+  levelOneCheckpoints,
+  levelOneClouds,
+  levelOneEntry,
+  levelOneGoal,
+  levelOneOrcs,
+  levelOneProps,
+  levelOneSpawn,
+  levelOneTerrain,
+  levelOneWater,
+  levelOneWorldHeight,
+  levelOneWorldWidth,
+  type BackgroundPatch,
+  type LevelOnePropKind,
+} from "../levels/levelOne";
 import { applyWish } from "../../wishes/applyWish";
 import { interpretLocal } from "../../wishes/interpretLocal";
 import { interpretRemote } from "../../wishes/interpretRemote";
 import type { WishPlan } from "../../wishes/types";
 
-const worldWidth = gameWidth * 3;
+const levelTwoWorldWidth = gameWidth * 3;
 const tileSize = 16;
 const groundTop = gameHeight - tileSize * 2;
-const terrainTopFrame = 0;
-const terrainFillFrame = 12;
 const requireRemoteWishPlan = import.meta.env.VITE_REQUIRE_AI === "true";
+
+const propAssetKeys: Record<LevelOnePropKind, string> = {
+  tree: assetKeys.grasslandTree,
+  bush: assetKeys.grasslandBush,
+  stoneSmall: assetKeys.grasslandStoneSmall,
+  stoneMedium: assetKeys.grasslandStoneMedium,
+  stoneLarge: assetKeys.grasslandStoneLarge,
+  tallGrassOne: assetKeys.grasslandTallGrassOne,
+  tallGrassTwo: assetKeys.grasslandTallGrassTwo,
+  flowerOne: assetKeys.grasslandFlowerOne,
+  flowerTwo: assetKeys.grasslandFlowerTwo,
+  flowerThree: assetKeys.grasslandFlowerThree,
+  grassUp: assetKeys.grasslandGrassUp,
+  choppedTree: assetKeys.grasslandChoppedTree,
+  loneTrunk: assetKeys.grasslandLoneTrunk,
+  trunkLeft: assetKeys.grasslandTrunkLeft,
+  trunkCenterOne: assetKeys.grasslandTrunkCenterOne,
+  trunkCenterTwo: assetKeys.grasslandTrunkCenterTwo,
+  trunkRight: assetKeys.grasslandTrunkRight,
+};
 
 export class BootScene extends Phaser.Scene {
   private player?: Player;
@@ -29,6 +66,7 @@ export class BootScene extends Phaser.Scene {
   private isWishTransitioning = false;
   private isNarrationPlaying = false;
   private levelComplete = false;
+  private readonly reachedCheckpoints = new Set<string>();
 
   public constructor() {
     super("boot");
@@ -37,6 +75,11 @@ export class BootScene extends Phaser.Scene {
   public init(data: { plan?: WishPlan }): void {
     this.levelTwoPlan = data.plan;
     this.preparedWishPlan = undefined;
+    this.player = undefined;
+    this.orcs = [];
+    this.healthSegments.length = 0;
+    this.chargeSegments.length = 0;
+    this.reachedCheckpoints.clear();
     this.remoteWishRequestId += 1;
     this.isNarrationPlaying = false;
     this.levelComplete = false;
@@ -48,14 +91,68 @@ export class BootScene extends Phaser.Scene {
     this.load.image(assetKeys.grasslandBackgroundFar, assetPaths.grasslandBackgroundFar);
     this.load.image(assetKeys.grasslandBackgroundMid, assetPaths.grasslandBackgroundMid);
     this.load.image(assetKeys.grasslandBackgroundGrass, assetPaths.grasslandBackgroundGrass);
+    this.load.image(assetKeys.grasslandCloudSmall, assetPaths.grasslandCloudSmall);
+    this.load.image(assetKeys.grasslandCloudMedium, assetPaths.grasslandCloudMedium);
+    this.load.image(assetKeys.grasslandCloudLarge, assetPaths.grasslandCloudLarge);
     this.load.spritesheet(assetKeys.grasslandTerrain, assetPaths.grasslandTerrain, {
       frameWidth: tileSize,
       frameHeight: tileSize,
     });
+    this.load.spritesheet(
+      assetKeys.grasslandTerrainBackground,
+      assetPaths.grasslandTerrainBackground,
+      { frameWidth: tileSize, frameHeight: tileSize },
+    );
+    this.load.spritesheet(
+      assetKeys.grasslandTerrainExtra,
+      assetPaths.grasslandTerrainExtra,
+      { frameWidth: tileSize, frameHeight: tileSize },
+    );
     this.load.image(assetKeys.grasslandTree, assetPaths.grasslandTree);
     this.load.image(assetKeys.grasslandBush, assetPaths.grasslandBush);
-    this.load.image(assetKeys.grasslandStone, assetPaths.grasslandStone);
-    this.load.image(assetKeys.grasslandTallGrass, assetPaths.grasslandTallGrass);
+    this.load.image(assetKeys.grasslandStoneSmall, assetPaths.grasslandStoneSmall);
+    this.load.image(assetKeys.grasslandStoneMedium, assetPaths.grasslandStoneMedium);
+    this.load.image(assetKeys.grasslandStoneLarge, assetPaths.grasslandStoneLarge);
+    this.load.image(assetKeys.grasslandTallGrassOne, assetPaths.grasslandTallGrassOne);
+    this.load.image(assetKeys.grasslandTallGrassTwo, assetPaths.grasslandTallGrassTwo);
+    this.load.image(assetKeys.grasslandFlowerOne, assetPaths.grasslandFlowerOne);
+    this.load.image(assetKeys.grasslandFlowerTwo, assetPaths.grasslandFlowerTwo);
+    this.load.image(assetKeys.grasslandFlowerThree, assetPaths.grasslandFlowerThree);
+    this.load.image(assetKeys.grasslandGrassUp, assetPaths.grasslandGrassUp);
+    this.load.image(assetKeys.grasslandChoppedTree, assetPaths.grasslandChoppedTree);
+    this.load.image(assetKeys.grasslandLoneTrunk, assetPaths.grasslandLoneTrunk);
+    this.load.image(assetKeys.grasslandTrunkLeft, assetPaths.grasslandTrunkLeft);
+    this.load.image(
+      assetKeys.grasslandTrunkCenterOne,
+      assetPaths.grasslandTrunkCenterOne,
+    );
+    this.load.image(
+      assetKeys.grasslandTrunkCenterTwo,
+      assetPaths.grasslandTrunkCenterTwo,
+    );
+    this.load.image(assetKeys.grasslandTrunkRight, assetPaths.grasslandTrunkRight);
+    this.load.image(assetKeys.grasslandEntryOne, assetPaths.grasslandEntryOne);
+    this.load.image(assetKeys.grasslandEntryTwo, assetPaths.grasslandEntryTwo);
+    this.load.image(assetKeys.grasslandEntryThree, assetPaths.grasslandEntryThree);
+    this.load.spritesheet(assetKeys.grasslandButterfly, assetPaths.grasslandButterfly, {
+      frameWidth: tileSize,
+      frameHeight: tileSize,
+    });
+    this.load.spritesheet(
+      assetKeys.grasslandWaterBubbles,
+      assetPaths.grasslandWaterBubbles,
+      { frameWidth: tileSize, frameHeight: tileSize },
+    );
+    this.load.spritesheet(
+      assetKeys.grasslandWaterBubblesGone,
+      assetPaths.grasslandWaterBubblesGone,
+      { frameWidth: tileSize, frameHeight: tileSize },
+    );
+    this.load.spritesheet(
+      assetKeys.grasslandWaterSurface,
+      assetPaths.grasslandWaterSurface,
+      { frameWidth: tileSize, frameHeight: tileSize },
+    );
     this.load.spritesheet(assetKeys.portal, assetPaths.portal, {
       frameWidth: 64,
       frameHeight: 64,
@@ -91,10 +188,12 @@ export class BootScene extends Phaser.Scene {
   }
 
   public create(): void {
-    this.physics.world.setBounds(0, 0, worldWidth, gameHeight);
-    this.cameras.main.setBounds(0, 0, worldWidth, gameHeight);
+    const activeWorldWidth = this.levelTwoPlan ? levelTwoWorldWidth : levelOneWorldWidth;
+    const activeWorldHeight = this.levelTwoPlan ? gameHeight : levelOneWorldHeight;
+    this.physics.world.setBounds(0, 0, activeWorldWidth, activeWorldHeight);
+    this.cameras.main.setBounds(0, 0, activeWorldWidth, activeWorldHeight);
 
-    this.createParallaxBackgrounds();
+    this.createParallaxBackgrounds(activeWorldWidth);
 
     this.anims.create({
       key: assetKeys.soldierIdleAnimation,
@@ -176,41 +275,66 @@ export class BootScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: assetKeys.grasslandButterflyAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.grasslandButterfly, {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 7,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.grasslandWaterBubblesAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.grasslandWaterBubbles, {
+        start: 0,
+        end: 4,
+      }),
+      frameRate: 6,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.grasslandWaterBubblesGoneAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.grasslandWaterBubblesGone, {
+        start: 0,
+        end: 5,
+      }),
+      frameRate: 6,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.grasslandWaterSurfaceAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.grasslandWaterSurface, {
+        start: 0,
+        end: 9,
+      }),
+      frameRate: 8,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.grasslandEntryAnimation,
+      frames: [
+        { key: assetKeys.grasslandEntryOne },
+        { key: assetKeys.grasslandEntryTwo },
+        { key: assetKeys.grasslandEntryThree },
+        { key: assetKeys.grasslandEntryTwo },
+      ],
+      frameRate: 3,
+      repeat: -1,
+    });
+
     if (this.levelTwoPlan) {
       this.createWishLevel(this.levelTwoPlan);
       return;
     }
 
-    const ground = this.createTerrainStrip(0, groundTop, worldWidth / tileSize, 2);
-    const firstPlatform = this.createTerrainStrip(224, 128, 5, 1);
-    const secondPlatform = this.createTerrainStrip(400, 128, 6, 1);
-    const thirdPlatform = this.createTerrainStrip(744, 128, 5, 1);
-    this.placeRouteProps();
-    const shrineTrigger = this.createShrinePlaceholder();
+    this.createLevelOne();
 
-    this.player = new Player(this, 64, 80);
-    this.orcs = [
-      new Orc(this, 544, 96, 496, 624),
-      new Orc(this, 768, 96, 712, 824),
-      new Orc(this, 936, 96, 872, 984),
-    ];
-    this.physics.add.collider(this.player, ground);
-    this.physics.add.collider(this.player, firstPlatform);
-    this.physics.add.collider(this.player, secondPlatform);
-    this.physics.add.collider(this.player, thirdPlatform);
-    this.physics.add.overlap(this.player, shrineTrigger, () => this.enterShrine());
-    this.orcs.forEach((orc) => {
-      this.physics.add.collider(orc, ground);
-      this.physics.add.collider(
-        this.player!,
-        orc,
-        () => this.handleOrcContact(orc),
-        undefined,
-        this,
-      );
-    });
-
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    this.cameras.main.startFollow(this.player!, true, 0.1, 0.1);
     this.cameras.main.setDeadzone(gameWidth / 3, 0);
 
     this.add
@@ -272,17 +396,67 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  private createParallaxBackgrounds(): void {
-    this.createParallaxLayer(assetKeys.grasslandBackground, 0, -5);
-    this.createParallaxLayer(assetKeys.grasslandBackgroundFar, 0.08, -4);
-    this.createParallaxLayer(assetKeys.grasslandBackgroundMid, 0.16, -3);
-    this.createParallaxLayer(assetKeys.grasslandBackgroundGrass, 0.4, -2, 0.55);
+  private createLevelOne(): void {
+    this.placeClouds();
+    levelOneBackgroundPatches.forEach((patch) => this.createBackgroundPatch(patch));
+    const terrain = levelOneTerrain.map(({ x, y, widthInTiles, heightInTiles }) =>
+      this.createTerrainStrip(x, y, widthInTiles, heightInTiles),
+    );
+    const bridges = levelOneBridges.map(({ x, y, widthInTiles }) =>
+      this.createBridgeStrip(x, y, widthInTiles),
+    );
+    const solids = [...terrain, ...bridges];
+    const waterHazard = this.createWaterway();
+
+    this.placeLevelOneProps();
+    this.placeAnimatedDecorations();
+    this.createOvergrownEntry();
+    const shrineTrigger = this.createShrineGoal();
+
+    this.player = new Player(this, levelOneSpawn.x, levelOneSpawn.y);
+    solids.forEach((solid) => this.physics.add.collider(this.player!, solid));
+    this.physics.add.overlap(this.player, shrineTrigger, () => this.enterShrine());
+    this.physics.add.overlap(this.player, waterHazard, () => {
+      this.player?.respawn();
+      this.statusText?.setText("The current carries you back.");
+      this.time.delayedCall(800, () => this.statusText?.setText(""));
+    });
+
+    this.createCheckpoints();
+    this.orcs = levelOneOrcs.map(
+      ({ x, y, patrolLeft, patrolRight }) =>
+        new Orc(this, x, y, patrolLeft, patrolRight),
+    );
+    this.orcs.forEach((orc) => {
+      solids.forEach((solid) => this.physics.add.collider(orc, solid));
+      this.physics.add.collider(
+        this.player!,
+        orc,
+        () => this.handleOrcContact(orc),
+        undefined,
+        this,
+      );
+    });
+  }
+
+  private createParallaxBackgrounds(worldWidth: number): void {
+    this.createParallaxLayer(assetKeys.grasslandBackground, 0, -5, worldWidth);
+    this.createParallaxLayer(assetKeys.grasslandBackgroundFar, 0.08, -4, worldWidth);
+    this.createParallaxLayer(assetKeys.grasslandBackgroundMid, 0.16, -3, worldWidth);
+    this.createParallaxLayer(
+      assetKeys.grasslandBackgroundGrass,
+      0.4,
+      -2,
+      worldWidth,
+      0.55,
+    );
   }
 
   private createParallaxLayer(
     key: string,
     scrollFactor: number,
     depth: number,
+    worldWidth: number,
     alpha = 1,
   ): void {
     this.add
@@ -298,41 +472,201 @@ export class BootScene extends Phaser.Scene {
       .setDepth(depth);
   }
 
-  private placeRouteProps(): void {
-    const groundProps: Array<[key: string, x: number, depth?: number]> = [
-      [assetKeys.grasslandTree, 168, 1],
-      [assetKeys.grasslandBush, 272],
-      [assetKeys.grasslandTallGrass, 352],
-      [assetKeys.grasslandStone, 456],
-      [assetKeys.grasslandBush, 680],
-      [assetKeys.grasslandTree, 824, 1],
-      [assetKeys.grasslandTallGrass, 904],
-      [assetKeys.grasslandStone, 960],
-    ];
+  private placeClouds(): void {
+    const cloudKeys = {
+      small: assetKeys.grasslandCloudSmall,
+      medium: assetKeys.grasslandCloudMedium,
+      large: assetKeys.grasslandCloudLarge,
+    };
 
-    groundProps.forEach(([key, x, depth = 1]) => {
-      this.add.image(x, groundTop, key).setOrigin(0.5, 1).setDepth(depth);
+    levelOneClouds.forEach(({ kind, x, y, scrollFactor, flipX = false }) => {
+      this.add
+        .image(x, y, cloudKeys[kind])
+        .setFlipX(flipX)
+        .setScrollFactor(scrollFactor)
+        .setDepth(-1);
     });
   }
 
-  private createShrinePlaceholder(): Phaser.GameObjects.Zone {
-    const shrineX = 1032;
-    const shrineBaseY = groundTop;
+  private createBackgroundPatch({
+    x,
+    y,
+    widthInTiles,
+    heightInTiles,
+  }: BackgroundPatch): void {
+    for (let row = 0; row < heightInTiles; row += 1) {
+      for (let column = 0; column < widthInTiles; column += 1) {
+        let frame = 13;
+        if (row === 0) {
+          frame = column === 0 ? 9 : column === widthInTiles - 1 ? 11 : 10;
+        } else if (row === heightInTiles - 1) {
+          frame = column === 0 ? 21 : column === widthInTiles - 1 ? 23 : 22;
+        } else if (column === 0) {
+          frame = row % 2 === 0 ? 16 : 12;
+        } else if (column === widthInTiles - 1) {
+          frame = row % 2 === 0 ? 19 : 15;
+        } else {
+          frame = row % 2 === 0 ? 17 : 13;
+        }
 
-    this.add.rectangle(shrineX, shrineBaseY - 10, 34, 12, 0x39254f).setDepth(1);
-    this.add.rectangle(shrineX - 10, shrineBaseY - 22, 4, 16, 0x62416f).setDepth(1);
-    this.add.rectangle(shrineX + 10, shrineBaseY - 22, 4, 16, 0x62416f).setDepth(1);
-    this.add.circle(shrineX, shrineBaseY - 28, 6, 0xc085d1).setDepth(1);
+        this.add
+          .image(
+            x + column * tileSize + tileSize / 2,
+            y + row * tileSize + tileSize / 2,
+            assetKeys.grasslandTerrainBackground,
+            frame,
+          )
+          .setAlpha(0.38)
+          .setDepth(0);
+      }
+    }
+  }
+
+  private createBridgeStrip(
+    x: number,
+    y: number,
+    widthInTiles: number,
+  ): Phaser.GameObjects.Zone {
+    for (let column = 0; column < widthInTiles; column += 1) {
+      const frame =
+        column === 0
+          ? 64
+          : column === widthInTiles - 1
+            ? 68
+            : 65 + ((column - 1) % 3);
+      this.add
+        .image(
+          x + column * tileSize + tileSize / 2,
+          y + tileSize / 2,
+          assetKeys.grasslandTerrainExtra,
+          frame,
+        )
+        .setDepth(1);
+    }
+
+    const bridge = this.add.zone(
+      x + (widthInTiles * tileSize) / 2,
+      y + tileSize / 2,
+      widthInTiles * tileSize,
+      tileSize,
+    );
+    this.physics.add.existing(bridge, true);
+    this.makeTopOnly(bridge);
+    return bridge;
+  }
+
+  private createWaterway(): Phaser.GameObjects.Zone {
+    for (let column = 0; column < levelOneWater.widthInTiles; column += 1) {
+      const x = levelOneWater.x + column * tileSize + tileSize / 2;
+      this.add
+        .image(
+          x,
+          levelOneWater.y + tileSize + tileSize / 2,
+          assetKeys.grasslandTerrainExtra,
+          71,
+        )
+        .setDepth(0);
+      const surface = this.add
+        .sprite(x, levelOneWater.y + tileSize / 2, assetKeys.grasslandWaterSurface)
+        .setDepth(1)
+        .play(assetKeys.grasslandWaterSurfaceAnimation);
+      surface.anims.setProgress((column % 10) / 10);
+    }
+
+    const hazard = this.add.zone(
+      levelOneWater.x + (levelOneWater.widthInTiles * tileSize) / 2,
+      levelOneWater.y + tileSize,
+      levelOneWater.widthInTiles * tileSize,
+      tileSize * 2,
+    );
+    this.physics.add.existing(hazard, true);
+    return hazard;
+  }
+
+  private placeLevelOneProps(): void {
+    levelOneProps.forEach(({ kind, x, y, depth = 2, flipX = false }) => {
+      this.add
+        .image(x, y, propAssetKeys[kind])
+        .setOrigin(0.5, 1)
+        .setFlipX(flipX)
+        .setDepth(depth);
+    });
+  }
+
+  private placeAnimatedDecorations(): void {
+    levelOneButterflies.forEach(({ x, y, flipX = false }, index) => {
+      const butterfly = this.add
+        .sprite(x, y, assetKeys.grasslandButterfly)
+        .setFlipX(flipX)
+        .setDepth(2)
+        .play(assetKeys.grasslandButterflyAnimation);
+      butterfly.anims.setProgress((index % 4) / 4);
+    });
+
+    levelOneBubbles.forEach(({ x, y, disappearing = false }, index) => {
+      const animation = disappearing
+        ? assetKeys.grasslandWaterBubblesGoneAnimation
+        : assetKeys.grasslandWaterBubblesAnimation;
+      const texture = disappearing
+        ? assetKeys.grasslandWaterBubblesGone
+        : assetKeys.grasslandWaterBubbles;
+      const bubble = this.add.sprite(x, y, texture).setDepth(2).play(animation);
+      bubble.anims.setProgress((index % 5) / 5);
+    });
+  }
+
+  private createOvergrownEntry(): void {
     this.add
-      .text(shrineX, shrineBaseY - 46, "SHRINE", {
+      .sprite(levelOneEntry.x, levelOneEntry.y, assetKeys.grasslandEntryOne)
+      .setOrigin(0.5, 1)
+      .setDepth(2)
+      .play(assetKeys.grasslandEntryAnimation);
+  }
+
+  private createCheckpoints(): void {
+    levelOneCheckpoints.forEach((checkpoint) => {
+      const trigger = this.add.zone(
+        checkpoint.triggerX,
+        levelOneWorldHeight / 2,
+        tileSize * 2,
+        levelOneWorldHeight,
+      );
+      this.physics.add.existing(trigger, true);
+      this.physics.add.overlap(this.player!, trigger, () => {
+        if (this.reachedCheckpoints.has(checkpoint.id)) {
+          return;
+        }
+        this.reachedCheckpoints.add(checkpoint.id);
+        this.player?.setRespawnPoint(checkpoint.spawnX, checkpoint.spawnY);
+        this.statusText?.setText(`Checkpoint — ${checkpoint.label}`);
+        this.time.delayedCall(950, () => this.statusText?.setText(""));
+      });
+    });
+  }
+
+  private createShrineGoal(): Phaser.GameObjects.Zone {
+    this.add
+      .sprite(levelOneGoal.x, levelOneGoal.surfaceY, assetKeys.portal)
+      .setOrigin(0.5, 1)
+      .setDepth(4)
+      .play(assetKeys.portalAnimation);
+    this.add
+      .text(levelOneGoal.x, levelOneGoal.surfaceY - 68, "WISHING GATE", {
         color: "#f1d6ff",
         fontFamily: "monospace",
         fontSize: "7px",
+        stroke: "#24153d",
+        strokeThickness: 2,
       })
       .setOrigin(0.5)
-      .setDepth(2);
+      .setDepth(5);
 
-    const shrineTrigger = this.add.zone(shrineX, shrineBaseY - 25, 46, 54);
+    const shrineTrigger = this.add.zone(
+      levelOneGoal.x,
+      levelOneGoal.surfaceY - 28,
+      40,
+      56,
+    );
     this.physics.add.existing(shrineTrigger, true);
     return shrineTrigger;
   }
@@ -825,13 +1159,14 @@ export class BootScene extends Phaser.Scene {
   ): Phaser.GameObjects.Zone {
     for (let row = 0; row < heightInTiles; row += 1) {
       for (let column = 0; column < widthInTiles; column += 1) {
-        const frame = row === 0 ? terrainTopFrame : terrainFillFrame;
-        this.add.image(
-          x + column * tileSize + tileSize / 2,
-          y + row * tileSize + tileSize / 2,
-          assetKeys.grasslandTerrain,
-          frame,
-        );
+        this.add
+          .image(
+            x + column * tileSize + tileSize / 2,
+            y + row * tileSize + tileSize / 2,
+            assetKeys.grasslandTerrain,
+            this.getTerrainFrame(column, row, widthInTiles, heightInTiles),
+          )
+          .setDepth(1);
       }
     }
 
@@ -842,7 +1177,46 @@ export class BootScene extends Phaser.Scene {
       heightInTiles * tileSize,
     );
     this.physics.add.existing(platform, true);
+    if (heightInTiles === 1) {
+      this.makeTopOnly(platform);
+    }
 
     return platform;
+  }
+
+  private makeTopOnly(platform: Phaser.GameObjects.Zone): void {
+    const body = platform.body as Phaser.Physics.Arcade.StaticBody;
+    body.checkCollision.down = false;
+    body.checkCollision.left = false;
+    body.checkCollision.right = false;
+  }
+
+  private getTerrainFrame(
+    column: number,
+    row: number,
+    widthInTiles: number,
+    heightInTiles: number,
+  ): number {
+    const isLeft = column === 0;
+    const isRight = column === widthInTiles - 1;
+    const isTop = row === 0;
+    const isBottom = row === heightInTiles - 1;
+
+    if (widthInTiles === 1 && heightInTiles === 1) {
+      return 39;
+    }
+    if (heightInTiles === 1) {
+      return isLeft ? 36 : isRight ? 38 : 37;
+    }
+    if (widthInTiles === 1) {
+      return isTop ? 3 : isBottom ? 27 : 15;
+    }
+    if (isTop) {
+      return isLeft ? 0 : isRight ? 2 : 1;
+    }
+    if (isBottom) {
+      return isLeft ? 24 : isRight ? 26 : 25;
+    }
+    return isLeft ? 12 : isRight ? 14 : 13;
   }
 }

@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T02:47:06+05:30 — Rebuild Level 1 as a handcrafted Grassland world
+
+- Changed: Replaced the three-screen placeholder with a 5,888 x 208 px, seven-area Level 1 driven by typed placement data. Added verified terrain edges/corners, split lower and optional upper routes, top-only thin platforms, parallax clouds, the wooden crossing, animated butterflies/water/bubbles/entry, six section checkpoints, three relocated Orc patrols, and an asset-backed violet Wishing Gate.
+- Why: The previous full-width floor and three floating strips left most of the supplied Grassland pack unused and did not provide a substantial or visually distinct platforming route.
+- Affected: `src/game/levels/levelOne.ts`, `src/game/assets.ts`, `src/game/scenes/BootScene.ts`, `src/game/entities/Player.ts`, `src/main.ts`, `README.md`, `docs/ARCHITECTURE.md`, and `docs/ASSETS.md`.
+- Validation: `npm run build` passed. Browser automation loaded all new textures and verified their 48/24/96 terrain frames and 4/5/6/10 animation frames; physics-tested every mandatory jump and both optional upper routes; verified all six checkpoints, water respawn, three grounded Orcs, 5,888 px camera/world bounds, final portal framing, and the restart into the unchanged 1,104 px Level 2.
+- Limitations: Exhaustive jump checks used the development game-state hook to place the Soldier at each takeoff before exercising real Arcade physics and controls; this was not one uninterrupted human playthrough. Level 2 remains the original short consequence route. Vite still reports its existing large-bundle warning for Phaser.
+
 ## 2026-10-11T02:05:30+05:30 — Fix live wish interpretation failures
 
 - Changed: The wish server now reads structured plan JSON from nested `output[].content[].text` when the Responses API omits top-level `output_text`, raises `max_output_tokens` so JSON is not cut mid-string, clamps overlong title/narration instead of rejecting them, and asks the model to stay within the UI length limits.

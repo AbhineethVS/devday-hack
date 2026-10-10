@@ -31,6 +31,11 @@ Only files required by the current vertical slice are copied into `public/assets
 - Source: <https://elthen.itch.io/2d-pixel-art-portal-sprites>
 - Status: selected but not yet available in the workspace. The source page permits commercial and non-commercial game use; do not redistribute the sprite sheet as a standalone asset. Credit is appreciated.
 
+### Pixel UI Pack 3
+
+- Status: supplied locally for review, but not imported. The folder contains PNG files only and no licence or source record.
+- Current replacement: the player health and charge HUD are drawn with Phaser primitives, so no unverified UI art ships with the project.
+
 ## Credits shown in the game
 
 The finished credits screen should include:

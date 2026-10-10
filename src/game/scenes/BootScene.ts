@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { assetKeys, assetPaths } from "../assets";
 import { gameHeight, gameWidth } from "../dimensions";
+import { Orc } from "../entities/Orc";
 import { Player } from "../entities/Player";
 
 const worldWidth = gameWidth * 3;
@@ -11,6 +12,11 @@ const terrainFillFrame = 12;
 
 export class BootScene extends Phaser.Scene {
   private player?: Player;
+  private orcs: Orc[] = [];
+  private statusText?: Phaser.GameObjects.Text;
+  private readonly healthSegments: Phaser.GameObjects.Rectangle[] = [];
+  private readonly chargeSegments: Phaser.GameObjects.Rectangle[] = [];
+  private lastRespawnAt = Number.NEGATIVE_INFINITY;
 
   public constructor() {
     super("boot");
@@ -18,15 +24,42 @@ export class BootScene extends Phaser.Scene {
 
   public preload(): void {
     this.load.image(assetKeys.grasslandBackground, assetPaths.grasslandBackground);
+    this.load.image(assetKeys.grasslandBackgroundFar, assetPaths.grasslandBackgroundFar);
+    this.load.image(assetKeys.grasslandBackgroundMid, assetPaths.grasslandBackgroundMid);
+    this.load.image(assetKeys.grasslandBackgroundGrass, assetPaths.grasslandBackgroundGrass);
     this.load.spritesheet(assetKeys.grasslandTerrain, assetPaths.grasslandTerrain, {
       frameWidth: tileSize,
       frameHeight: tileSize,
     });
+    this.load.image(assetKeys.grasslandTree, assetPaths.grasslandTree);
+    this.load.image(assetKeys.grasslandBush, assetPaths.grasslandBush);
+    this.load.image(assetKeys.grasslandStone, assetPaths.grasslandStone);
+    this.load.image(assetKeys.grasslandTallGrass, assetPaths.grasslandTallGrass);
     this.load.spritesheet(assetKeys.soldierIdle, assetPaths.soldierIdle, {
       frameWidth: 100,
       frameHeight: 100,
     });
     this.load.spritesheet(assetKeys.soldierWalk, assetPaths.soldierWalk, {
+      frameWidth: 100,
+      frameHeight: 100,
+    });
+    this.load.spritesheet(assetKeys.soldierAttack, assetPaths.soldierAttack, {
+      frameWidth: 100,
+      frameHeight: 100,
+    });
+    this.load.spritesheet(assetKeys.orcIdle, assetPaths.orcIdle, {
+      frameWidth: 100,
+      frameHeight: 100,
+    });
+    this.load.spritesheet(assetKeys.orcWalk, assetPaths.orcWalk, {
+      frameWidth: 100,
+      frameHeight: 100,
+    });
+    this.load.spritesheet(assetKeys.orcHurt, assetPaths.orcHurt, {
+      frameWidth: 100,
+      frameHeight: 100,
+    });
+    this.load.spritesheet(assetKeys.orcDeath, assetPaths.orcDeath, {
       frameWidth: 100,
       frameHeight: 100,
     });
@@ -36,13 +69,7 @@ export class BootScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldWidth, gameHeight);
     this.cameras.main.setBounds(0, 0, worldWidth, gameHeight);
 
-    this.add.tileSprite(
-      worldWidth / 2,
-      gameHeight / 2,
-      worldWidth,
-      gameHeight,
-      assetKeys.grasslandBackground,
-    );
+    this.createParallaxBackgrounds();
 
     this.anims.create({
       key: assetKeys.soldierIdleAnimation,
@@ -64,34 +91,388 @@ export class BootScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: assetKeys.soldierAttackAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.soldierAttack, {
+        start: 0,
+        end: 5,
+      }),
+      frameRate: 18,
+      repeat: 0,
+    });
+
+    this.anims.create({
+      key: assetKeys.orcIdleAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.orcIdle, {
+        start: 0,
+        end: 5,
+      }),
+      frameRate: 6,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.orcWalkAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.orcWalk, {
+        start: 0,
+        end: 7,
+      }),
+      frameRate: 8,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: assetKeys.orcHurtAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.orcHurt, {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 14,
+      repeat: 0,
+    });
+
+    this.anims.create({
+      key: assetKeys.orcDeathAnimation,
+      frames: this.anims.generateFrameNumbers(assetKeys.orcDeath, {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 10,
+      repeat: 0,
+    });
+
     const ground = this.createTerrainStrip(0, groundTop, worldWidth / tileSize, 2);
-    const firstPlatform = this.createTerrainStrip(224, 128, 6, 1);
-    const secondPlatform = this.createTerrainStrip(420, 96, 7, 1);
+    const firstPlatform = this.createTerrainStrip(224, 128, 5, 1);
+    const secondPlatform = this.createTerrainStrip(400, 128, 6, 1);
+    const thirdPlatform = this.createTerrainStrip(744, 128, 5, 1);
+    this.placeRouteProps();
+    this.createShrinePlaceholder();
 
     this.player = new Player(this, 64, 80);
+    this.orcs = [
+      new Orc(this, 544, 96, 496, 624),
+      new Orc(this, 768, 96, 712, 824),
+      new Orc(this, 936, 96, 872, 984),
+    ];
     this.physics.add.collider(this.player, ground);
     this.physics.add.collider(this.player, firstPlatform);
     this.physics.add.collider(this.player, secondPlatform);
+    this.physics.add.collider(this.player, thirdPlatform);
+    this.orcs.forEach((orc) => {
+      this.physics.add.collider(orc, ground);
+      this.physics.add.collider(
+        this.player!,
+        orc,
+        () => this.handleOrcContact(orc),
+        undefined,
+        this,
+      );
+    });
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.cameras.main.setDeadzone(gameWidth / 3, 0);
 
     this.add
-      .text(12, 142, "Arrow keys to run · Up / Space to jump", {
+      .rectangle(106, 16, 200, 26, 0x071627, 0.62)
+      .setScrollFactor(0)
+      .setDepth(9);
+
+    this.add
+      .text(12, 8, "Arrows run · Up/Space jump · X attack", {
         color: "#ffffff",
         fontFamily: "monospace",
         fontSize: "8px",
       })
       .setScrollFactor(0)
       .setDepth(10);
+
+    this.statusText = this.add
+      .text(12, 18, "", {
+        color: "#ffe7a1",
+        fontFamily: "monospace",
+        fontSize: "7px",
+      })
+      .setScrollFactor(0)
+      .setDepth(10);
+
+    this.createHealthBar();
   }
 
-  public update(): void {
-    this.player?.update();
+  public update(time: number): void {
+    const attackStarted = this.player?.update(time) ?? false;
+    this.orcs.forEach((orc) => orc.update());
+
+    if (attackStarted) {
+      this.handlePlayerAttack(time);
+    }
+
+    const healthBeforeHealing = this.player?.getHealth() ?? 0;
+    if (this.player?.consumeChargeToHeal()) {
+      this.playHealingFeedback(healthBeforeHealing);
+      this.updateChargeBar();
+      this.statusText?.setText("Charge spent — health restored!");
+      this.time.delayedCall(900, () => this.statusText?.setText(""));
+    }
 
     if (this.player && this.player.y > gameHeight + 80) {
       this.player.respawn();
     }
+  }
+
+  private createParallaxBackgrounds(): void {
+    this.createParallaxLayer(assetKeys.grasslandBackground, 0, -5);
+    this.createParallaxLayer(assetKeys.grasslandBackgroundFar, 0.08, -4);
+    this.createParallaxLayer(assetKeys.grasslandBackgroundMid, 0.16, -3);
+    this.createParallaxLayer(assetKeys.grasslandBackgroundGrass, 0.4, -2, 0.55);
+  }
+
+  private createParallaxLayer(
+    key: string,
+    scrollFactor: number,
+    depth: number,
+    alpha = 1,
+  ): void {
+    this.add
+      .tileSprite(
+        worldWidth / 2,
+        gameHeight / 2,
+        worldWidth + gameWidth * 2,
+        gameHeight,
+        key,
+      )
+      .setScrollFactor(scrollFactor)
+      .setAlpha(alpha)
+      .setDepth(depth);
+  }
+
+  private placeRouteProps(): void {
+    const groundProps: Array<[key: string, x: number, depth?: number]> = [
+      [assetKeys.grasslandTree, 168, 1],
+      [assetKeys.grasslandBush, 272],
+      [assetKeys.grasslandTallGrass, 352],
+      [assetKeys.grasslandStone, 456],
+      [assetKeys.grasslandBush, 680],
+      [assetKeys.grasslandTree, 824, 1],
+      [assetKeys.grasslandTallGrass, 904],
+      [assetKeys.grasslandStone, 960],
+    ];
+
+    groundProps.forEach(([key, x, depth = 1]) => {
+      this.add.image(x, groundTop, key).setOrigin(0.5, 1).setDepth(depth);
+    });
+  }
+
+  private createShrinePlaceholder(): void {
+    const shrineX = 1032;
+    const shrineBaseY = groundTop;
+
+    this.add.rectangle(shrineX, shrineBaseY - 10, 34, 12, 0x39254f).setDepth(1);
+    this.add.rectangle(shrineX - 10, shrineBaseY - 22, 4, 16, 0x62416f).setDepth(1);
+    this.add.rectangle(shrineX + 10, shrineBaseY - 22, 4, 16, 0x62416f).setDepth(1);
+    this.add.circle(shrineX, shrineBaseY - 28, 6, 0xc085d1).setDepth(1);
+    this.add
+      .text(shrineX, shrineBaseY - 46, "SHRINE", {
+        color: "#f1d6ff",
+        fontFamily: "monospace",
+        fontSize: "7px",
+      })
+      .setOrigin(0.5)
+      .setDepth(2);
+  }
+
+  private handleOrcContact(orc: Orc): void {
+    if (!this.player || orc.isDefeated()) {
+      return;
+    }
+
+    const knockbackDirection = this.player.x < orc.x ? -1 : 1;
+    if (!this.player.takeHit(this.time.now, knockbackDirection)) {
+      return;
+    }
+
+    this.updateHealthBar();
+    this.shakeHealthBar();
+
+    if (this.player.getHealth() <= 0) {
+      this.respawnPlayer("You were defeated — health restored.");
+    } else {
+      this.statusText?.setText("Ouch! One health bar lost.");
+      this.time.delayedCall(900, () => this.statusText?.setText(""));
+    }
+  }
+
+  private handlePlayerAttack(time: number): void {
+    if (!this.player) {
+      return;
+    }
+
+    const target = this.orcs.find((orc) => {
+      if (orc.isDefeated()) {
+        return false;
+      }
+
+      const horizontalDistance = orc.x - this.player!.x;
+      const isInFacingDirection =
+        Math.sign(horizontalDistance || this.player!.getFacingDirection()) ===
+        this.player!.getFacingDirection();
+      const isWithinReach = Math.abs(horizontalDistance) <= 42;
+      const isAtSimilarHeight = Math.abs(orc.y - this.player!.y) <= 28;
+      return isInFacingDirection && isWithinReach && isAtSimilarHeight;
+    });
+
+    if (target?.takeHit(time)) {
+      const charged = this.player.addCharge();
+      this.updateChargeBar();
+      const message = target.isDefeated()
+        ? "Orc defeated!"
+        : charged
+          ? "Hit! Charge gained."
+          : "Hit! Charge is full — press F to heal.";
+      this.statusText?.setText(message);
+      this.time.delayedCall(700, () => this.statusText?.setText(""));
+    }
+  }
+
+  private createHealthBar(): void {
+    this.add
+      .text(12, 31, "HEALTH", {
+        color: "#ffffff",
+        fontFamily: "monospace",
+        fontSize: "7px",
+      })
+      .setScrollFactor(0)
+      .setDepth(10);
+
+    for (let index = 0; index < 5; index += 1) {
+      this.add
+        .rectangle(57 + index * 17, 35, 15, 6, 0x321e33)
+        .setScrollFactor(0)
+        .setDepth(10);
+
+      const segment = this.add
+        .rectangle(57 + index * 17, 35, 11, 3, 0xff6e79)
+        .setScrollFactor(0)
+        .setDepth(11);
+      this.healthSegments.push(segment);
+    }
+
+    this.updateHealthBar();
+
+    this.add
+      .text(12, 43, "CHARGE · F", {
+        color: "#ffffff",
+        fontFamily: "monospace",
+        fontSize: "7px",
+      })
+      .setScrollFactor(0)
+      .setDepth(10);
+
+    for (let index = 0; index < 5; index += 1) {
+      this.add
+        .rectangle(73 + index * 17, 47, 15, 6, 0x263145)
+        .setScrollFactor(0)
+        .setDepth(10);
+
+      const segment = this.add
+        .rectangle(73 + index * 17, 47, 11, 3, 0xf4f5ff)
+        .setScrollFactor(0)
+        .setDepth(11);
+      this.chargeSegments.push(segment);
+    }
+
+    this.updateChargeBar();
+  }
+
+  private updateHealthBar(): void {
+    const health = this.player?.getHealth() ?? 0;
+    this.healthSegments.forEach((segment, index) => {
+      segment.setFillStyle(index < health ? 0xff6e79 : 0x4d3b4f);
+    });
+  }
+
+  private updateChargeBar(): void {
+    const charge = this.player?.getCharge() ?? 0;
+    this.chargeSegments.forEach((segment, index) => {
+      segment.setFillStyle(index < charge ? 0xf4f5ff : 0x263145);
+    });
+  }
+
+  private playHealingFeedback(healthBeforeHealing: number): void {
+    if (!this.player) {
+      return;
+    }
+
+    this.player.setTint(0xd8ffd6);
+    this.time.delayedCall(380, () => this.player?.clearTint());
+
+    const healText = this.add
+      .text(this.player.x, this.player.y - 54, "HEALED!", {
+        color: "#edffd9",
+        fontFamily: "monospace",
+        fontSize: "8px",
+      })
+      .setOrigin(0.5)
+      .setDepth(5)
+      .setScale(0.85);
+
+    this.tweens.add({
+      targets: healText,
+      y: healText.y - 16,
+      alpha: 0,
+      scale: 1,
+      duration: 520,
+      ease: "Cubic.Out",
+      onComplete: () => healText.destroy(),
+    });
+
+    [-7, 0, 7].forEach((offset, index) => {
+      const particle = this.add
+        .rectangle(this.player!.x + offset, this.player!.y + 2, 3, 3, 0xc7ffad)
+        .setDepth(4);
+      this.tweens.add({
+        targets: particle,
+        y: particle.y - 18 - index * 3,
+        alpha: 0,
+        duration: 380,
+        delay: index * 45,
+        ease: "Cubic.Out",
+        onComplete: () => particle.destroy(),
+      });
+    });
+
+    this.healthSegments.forEach((segment, index) => {
+      if (index >= healthBeforeHealing) {
+        this.time.delayedCall((index - healthBeforeHealing) * 70, () => {
+          segment.setFillStyle(0xff6e79);
+        });
+      }
+    });
+  }
+
+  private shakeHealthBar(): void {
+    this.tweens.add({
+      targets: this.healthSegments,
+      x: "+=2",
+      duration: 45,
+      yoyo: true,
+      repeat: 3,
+    });
+  }
+
+  private respawnPlayer(message: string): void {
+    if (!this.player || this.time.now - this.lastRespawnAt < 500) {
+      return;
+    }
+
+    this.lastRespawnAt = this.time.now;
+    this.player.respawn();
+    this.player.restoreHealth();
+    this.player.resetCharge();
+    this.orcs.forEach((orc) => orc.reset());
+    this.updateHealthBar();
+    this.updateChargeBar();
+    this.statusText?.setText(message);
+    this.time.delayedCall(1100, () => this.statusText?.setText(""));
   }
 
   private createTerrainStrip(

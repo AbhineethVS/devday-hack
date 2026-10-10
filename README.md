@@ -34,7 +34,7 @@ This template has no application code or required technology stack. The document
 - **Project name:** Wishbound
 - **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and makes the second level a playable consequence.
 - **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** Milestone 2 playable platformer shell; the first complete demo route will be Grassland path → shrine → Flight consequence → portal.
+- **Working demo:** Milestone 3 playable Grassland route with combat and a shrine placeholder; the first complete story demo will be Grassland path → shrine → Flight consequence → portal.
 - **Technology stack:** Vite, TypeScript, and Phaser. A small Node API is planned only after the local gameplay loop is complete.
 
 ### Run the project
@@ -46,8 +46,8 @@ This template has no application code or required technology stack. The document
 
 ### Current status
 
-- Working features: The Soldier can run with Left/Right Arrow, make a variable-height jump with Up Arrow or Space, land on Grassland terrain, and respawn after a fall. The camera follows horizontally.
-- Known limitations: The route is still a movement test with two simple platforms; it has no Orc, shrine, portal source file, wish flow, second level, or AI integration. Only the Soldier and Orc are available from the free character download.
+- Working features: A three-screen Grassland route uses layered parallax scenery, terrain, props, three patrolling Orcs, and a shrine placeholder. The Soldier can run, make variable-height jumps, attack with `X`, defeat an Orc in three hits, lose one of five health pips on contact, and recharge health through a five-hit `F` heal. A full defeat resets the player and all Orcs.
+- Known limitations: The shrine is non-interactive; there is no wish dialog, transformation, second level, portal source file, or AI integration. The code-drawn HUD intentionally does not use the locally supplied Pixel UI Pack 3 because its licence/source record is not available.
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Execution order: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)

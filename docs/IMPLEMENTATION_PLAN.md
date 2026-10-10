@@ -38,6 +38,8 @@ Do not make a tilemap editor, combat system, or level-two flow yet.
 
 ## Milestone 3 — Grassland route and Orc obstacle
 
+**Status: Complete — route and combat reviewed and accepted on 11 October 2026.**
+
 Turn the test scene into the short first route.
 
 - Add five parallax background layers and optional clouds.

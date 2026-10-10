@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:30:25+05:30 — Tune Level 2 late-route parkour
+
+- Changed: Replaced the oversized late gaps in both Flight and Fire routes with shorter gaps and two raised stepping platforms before the final portal ground.
+- Why: Keep the ability challenge readable without leaving an unreasonable jump near the end of the second map.
+- Affected: `src/game/scenes/BootScene.ts`.
+- Validation: `npm run build` passed.
+- Limitations: Platform spacing is tuned from the fixed player movement values and still needs player browser feedback.
+
 ## 2026-10-11T01:26:02+05:30 — Build Milestone 5 local wish plans
 
 - Changed: Added a typed, allowlisted `WishPlan` catalogue, deterministic keyword interpretation, and a centralized `applyWish` mechanic hook. The opening dialog now prepares a plan before Level 1 starts; the shrine uses that saved plan for Level 2. Flight grants a double jump and moonlit route; Fire-related wishes grant a `C` air dash and ember route. Unknown text falls back to Flight.

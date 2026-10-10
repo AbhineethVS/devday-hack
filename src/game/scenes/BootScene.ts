@@ -470,14 +470,18 @@ export class BootScene extends Phaser.Scene {
         this.createTerrainStrip(0, groundTop, 22, 2),
         this.createTerrainStrip(376, 144, 4, 1),
         this.createTerrainStrip(544, groundTop, 12, 2),
-        this.createTerrainStrip(912, groundTop, 12, 2),
+        this.createTerrainStrip(760, 144, 4, 1),
+        this.createTerrainStrip(840, 112, 4, 1),
+        this.createTerrainStrip(920, groundTop, 11, 2),
       ];
     }
 
     return [
       this.createTerrainStrip(0, groundTop, 22, 2),
       this.createTerrainStrip(496, groundTop, 14, 2),
-      this.createTerrainStrip(880, groundTop, 14, 2),
+      this.createTerrainStrip(744, 144, 4, 1),
+      this.createTerrainStrip(824, 112, 4, 1),
+      this.createTerrainStrip(896, groundTop, 12, 2),
       this.createTerrainStrip(376, 144, 4, 1),
       this.createTerrainStrip(452, 112, 4, 1),
     ];

@@ -8,6 +8,8 @@ The available Phase 0 assets are the Grassland environment, Soldier player, and 
 
 ## Milestone 1 — Runnable Phaser shell
 
+**Status: Complete — browser render reviewed and accepted on 10 October 2026.**
+
 Create the Vite + TypeScript + Phaser client and only the foundational game configuration.
 
 - Add the standard Vite scripts and Phaser dependency.

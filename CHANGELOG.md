@@ -9,6 +9,7 @@ Record each meaningful project change during the event, newest first. Update thi
 - Changed: Added the Vite + TypeScript + Phaser client shell, pixel-art game configuration, BootScene, Soldier idle animation, and working run/build commands.
 - Why: Complete the first verified technical slice before adding movement or gameplay scope.
 - Validation: `npm run build` passed. Visually checked the local Vite preview: the 368 x 208 Grassland background rendered sharply with an animated Soldier idle sprite.
+- Review: User reviewed and accepted the browser render on 10 October 2026.
 - Limitations: The shell has no movement, physics interaction, route, shrine, wishes, portal, or API.
 
 ## 2026-10-10T23:07:08+05:30 — Document sequential implementation checkpoints

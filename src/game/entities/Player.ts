@@ -41,6 +41,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.attackKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     this.healKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    scene.input.keyboard.addCapture([
+      Phaser.Input.Keyboard.KeyCodes.LEFT,
+      Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      Phaser.Input.Keyboard.KeyCodes.UP,
+      Phaser.Input.Keyboard.KeyCodes.SPACE,
+      Phaser.Input.Keyboard.KeyCodes.X,
+      Phaser.Input.Keyboard.KeyCodes.F,
+    ]);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     // The sheet has transparent padding. This collision box tracks the
@@ -128,12 +136,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   public consumeChargeToHeal(): boolean {
-    if (!Phaser.Input.Keyboard.JustDown(this.healKey) || this.charge < maximumCharge) {
+    if (!Phaser.Input.Keyboard.JustDown(this.healKey) || this.charge === 0) {
       return false;
     }
 
-    this.restoreHealth();
-    this.resetCharge();
+    this.health = Math.min(maximumHealth, this.health + 1);
+    this.charge -= 1;
     return true;
   }
 

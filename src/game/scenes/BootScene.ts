@@ -19,6 +19,7 @@ export class BootScene extends Phaser.Scene {
   private lastRespawnAt = Number.NEGATIVE_INFINITY;
   private isFlightLevel = false;
   private wishDialog?: Phaser.GameObjects.DOMElement;
+  private isWishTransitioning = false;
   private isNarrationPlaying = false;
   private levelComplete = false;
 
@@ -249,7 +250,7 @@ export class BootScene extends Phaser.Scene {
     if (this.player?.consumeChargeToHeal()) {
       this.playHealingFeedback(healthBeforeHealing);
       this.updateChargeBar();
-      this.statusText?.setText("Charge spent — health restored!");
+      this.statusText?.setText("Charge spent — one health restored!");
       this.time.delayedCall(900, () => this.statusText?.setText(""));
     }
 
@@ -341,7 +342,17 @@ export class BootScene extends Phaser.Scene {
         </form>
       `)
       .setScrollFactor(0)
-      .setDepth(30);
+      .setDepth(30)
+      .setAlpha(0)
+      .setScale(0.72);
+
+    this.tweens.add({
+      targets: this.wishDialog,
+      alpha: 1,
+      scale: 1,
+      duration: 240,
+      ease: "Back.Out",
+    });
 
     const form = this.wishDialog.node.querySelector("form");
     const input = this.wishDialog.node.querySelector("input");
@@ -349,13 +360,29 @@ export class BootScene extends Phaser.Scene {
       event.preventDefault();
       this.startFlight();
     });
-    window.setTimeout(() => (input as HTMLInputElement | null)?.focus(), 0);
+    this.time.delayedCall(180, () => (input as HTMLInputElement | null)?.focus());
   }
 
   private startFlight(): void {
-    this.wishDialog?.destroy();
-    this.wishDialog = undefined;
-    this.scene.restart({ flight: true });
+    if (!this.wishDialog || this.isWishTransitioning) {
+      return;
+    }
+
+    this.isWishTransitioning = true;
+    const dialog = this.wishDialog;
+    this.tweens.add({
+      targets: dialog,
+      alpha: 0,
+      scale: 0.78,
+      duration: 160,
+      ease: "Back.In",
+      onComplete: () => {
+        dialog.destroy();
+        this.wishDialog = undefined;
+        this.isWishTransitioning = false;
+        this.scene.restart({ flight: true });
+      },
+    });
   }
 
   private createFlightLevel(): void {

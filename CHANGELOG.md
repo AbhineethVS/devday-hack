@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:02:54+05:30 — Fix controls and animate wish dialog
+
+- Changed: Captured gameplay keys so the browser does not claim Space, arrows, `X`, or `F`; changed `F` to spend one earned charge for one health rather than silently requiring a full five-charge meter; and added smooth scale/fade-in and scale/fade-out animations around the shrine wish dialog.
+- Why: Make the main controls dependable and make the input transition feel intentional.
+- Affected: `src/game/entities/Player.ts`, `src/game/scenes/BootScene.ts`, and `README.md`.
+- Validation: `npm run build` passed.
+- Limitations: Keys typed into the active wish input remain reserved for text entry until the dialog is submitted.
+
 ## 2026-10-11T00:54:06+05:30 — Build Milestone 4 shrine and Flight transformation
 
 - Changed: Made the Grassland shrine interactive; it freezes the route and opens a text wish overlay. Any submitted wish intentionally starts the hardcoded Flight route, which has a moonlit palette, an introductory narration, elevated platforms, Soldier double jump, and the supplied animated violet portal as its completion marker.

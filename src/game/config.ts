@@ -1,8 +1,6 @@
 import Phaser from "phaser";
+import { gameHeight, gameWidth } from "./dimensions";
 import { BootScene } from "./scenes/BootScene";
-
-export const gameWidth = 368;
-export const gameHeight = 208;
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -19,7 +17,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { x: 0, y: 0 },
+      gravity: { x: 0, y: 700 },
       debug: false,
     },
   },

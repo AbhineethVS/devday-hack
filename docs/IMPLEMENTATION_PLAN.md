@@ -23,6 +23,8 @@ Do not add movement, enemies, UI, a shrine, or an API in this milestone.
 
 ## Milestone 2 — Player movement and collision
 
+**Status: Complete — browser controls reviewed and accepted on 11 October 2026.**
+
 Add the minimum platformer loop in one scene.
 
 - Create a simple fixed floor and two platforms using Grassland terrain visuals with Arcade Physics collision rectangles.

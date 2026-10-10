@@ -21,6 +21,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private invulnerableEndsAt = 0;
   private health = maximumHealth;
   private charge = 0;
+  private doubleJumpEnabled = false;
+  private jumpsUsed = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, assetKeys.soldierIdle);
@@ -85,8 +87,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
       Phaser.Input.Keyboard.JustDown(this.spaceKey);
 
-    if (jumpStarted && body.blocked.down) {
+    const isGrounded = body.blocked.down || body.touching.down;
+    if (isGrounded) {
+      this.jumpsUsed = 0;
+    }
+
+    const canJump = isGrounded || (this.doubleJumpEnabled && this.jumpsUsed < 2);
+    if (jumpStarted && canJump) {
       body.setVelocityY(-jumpVelocity);
+      this.jumpsUsed += 1;
     }
 
     if (this.wasJumpHeld && !jumpHeld && body.velocity.y < 0) {
@@ -151,11 +160,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.charge = 0;
   }
 
+  public enableDoubleJump(): void {
+    this.doubleJumpEnabled = true;
+  }
+
   public respawn(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.setPosition(this.spawnPoint.x, this.spawnPoint.y);
     body.setVelocity(0, 0);
     this.wasJumpHeld = false;
+    this.jumpsUsed = 0;
     this.clearTint();
   }
 }

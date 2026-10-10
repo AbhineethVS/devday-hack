@@ -27,3 +27,47 @@ body {
   height: auto;
   image-rendering: pixelated;
 }
+
+.wish-dialog {
+  width: 280px;
+  border: 2px solid #c5a5ef;
+  background: #100d26;
+  box-shadow: 0 0 0 3px #352453;
+  color: #f1e7ff;
+  font-family: monospace;
+  padding: 14px;
+  text-align: center;
+}
+
+.wish-dialog label {
+  display: block;
+  color: #f1e7ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wish-dialog p {
+  color: #d5c9ee;
+  font-size: 11px;
+  margin: 8px 0;
+}
+
+.wish-dialog input,
+.wish-dialog button {
+  border: 1px solid #c5a5ef;
+  font: inherit;
+  padding: 7px 8px;
+}
+
+.wish-dialog input {
+  background: #21183d;
+  color: #ffffff;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.wish-dialog button {
+  background: #7951a5;
+  color: #ffffff;
+  cursor: pointer;
+}

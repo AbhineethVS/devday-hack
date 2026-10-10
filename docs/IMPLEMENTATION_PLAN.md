@@ -53,6 +53,8 @@ Stop and simplify if the route cannot be played consistently. Keep collision geo
 
 ## Milestone 4 — Shrine and hardcoded Flight transformation
 
+**Status: Complete — build verification passed on 11 October 2026; browser flow verification pending user review.**
+
 Deliver the complete story before adding natural-language interpretation.
 
 - Shrine contact freezes gameplay and opens the wish overlay.

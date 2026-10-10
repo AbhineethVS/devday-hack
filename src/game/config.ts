@@ -10,6 +10,9 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#071627",
   pixelArt: true,
   roundPixels: true,
+  dom: {
+    createContainer: true,
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

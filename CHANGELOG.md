@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T00:54:06+05:30 — Build Milestone 4 shrine and Flight transformation
+
+- Changed: Made the Grassland shrine interactive; it freezes the route and opens a text wish overlay. Any submitted wish intentionally starts the hardcoded Flight route, which has a moonlit palette, an introductory narration, elevated platforms, Soldier double jump, and the supplied animated violet portal as its completion marker.
+- Why: Deliver the complete offline story path before interpreting free-form wishes or adding network features.
+- Affected: `src/game/scenes/BootScene.ts`, `src/game/entities/Player.ts`, `src/game/assets.ts`, `src/game/config.ts`, `src/style.css`, `public/assets/world/portal/Purple Portal Sprite Sheet.png`, `docs/ASSETS.md`, `docs/IMPLEMENTATION_PLAN.md`, and `README.md`.
+- Validation: `npm run build` passed. Essential browser-flow verification is in progress before human review.
+- Limitations: The entered wish text does not yet affect the selected plan; Flight is the sole available offline consequence. The portal credit has been recorded, but a separate credits screen, audio, alternative wishes, and API integration are deferred.
+
 ## 2026-10-11T00:42:45+05:30 — Build Milestone 3 Grassland route and combat
 
 - Changed: Added five-layer Grassland parallax, fixed route dressing, shrine placeholder, three Orc patrols, Soldier attack and Orc hurt/death animations, five-pip health, five-pip hit charge, `F` healing, health shake feedback, and a healing burst. Defeat resets the player, charge, and all Orcs.

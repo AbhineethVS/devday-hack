@@ -29,7 +29,9 @@ Only files required by the current vertical slice are copied into `public/assets
 ### Purple portal sprite
 
 - Source: <https://elthen.itch.io/2d-pixel-art-portal-sprites>
-- Status: selected but not yet available in the workspace. The source page permits commercial and non-commercial game use; do not redistribute the sprite sheet as a standalone asset. Credit is appreciated.
+- Creator: Elthen's Pixel Art Shop.
+- Imported: `public/assets/world/portal/Purple Portal Sprite Sheet.png`, supplied for this project on 11 October 2026. Runtime uses the first eight 64 x 64 frames as the animated Level 2 exit portal.
+- Licence stated on the source page: permitted for commercial and non-commercial game use; do not redistribute the sprite sheet as a standalone asset. Credit is appreciated.
 
 ### Pixel UI Pack 3
 

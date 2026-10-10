@@ -22,7 +22,9 @@ import {
   type BackgroundPatch,
   type LevelOnePropKind,
 } from "../levels/levelOne";
+import type { GeneratedLevel } from "../levels/generatedLevel";
 import { applyWish } from "../../wishes/applyWish";
+import { generateRemoteLevel } from "../../wishes/generateRemoteLevel";
 import { interpretLocal } from "../../wishes/interpretLocal";
 import { interpretRemote } from "../../wishes/interpretRemote";
 import type { WishPlan } from "../../wishes/types";
@@ -60,8 +62,11 @@ export class BootScene extends Phaser.Scene {
   private readonly chargeSegments: Phaser.GameObjects.Rectangle[] = [];
   private lastRespawnAt = Number.NEGATIVE_INFINITY;
   private levelTwoPlan?: WishPlan;
+  private levelTwoMap?: GeneratedLevel;
   private preparedWishPlan?: WishPlan;
+  private preparedLevel?: GeneratedLevel;
   private remoteWishRequestId = 0;
+  private remoteLevelRequestId = 0;
   private wishDialog?: Phaser.GameObjects.DOMElement;
   private isWishTransitioning = false;
   private isNarrationPlaying = false;
@@ -72,15 +77,18 @@ export class BootScene extends Phaser.Scene {
     super("boot");
   }
 
-  public init(data: { plan?: WishPlan }): void {
+  public init(data: { plan?: WishPlan; level?: GeneratedLevel }): void {
     this.levelTwoPlan = data.plan;
+    this.levelTwoMap = data.level;
     this.preparedWishPlan = undefined;
+    this.preparedLevel = undefined;
     this.player = undefined;
     this.orcs = [];
     this.healthSegments.length = 0;
     this.chargeSegments.length = 0;
     this.reachedCheckpoints.clear();
     this.remoteWishRequestId += 1;
+    this.remoteLevelRequestId += 1;
     this.isNarrationPlaying = false;
     this.levelComplete = false;
     this.isWishTransitioning = false;
@@ -188,7 +196,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   public create(): void {
-    const activeWorldWidth = this.levelTwoPlan ? levelTwoWorldWidth : levelOneWorldWidth;
+    const activeWorldWidth = this.levelTwoPlan
+      ? this.levelTwoMap?.worldWidth ?? levelTwoWorldWidth
+      : levelOneWorldWidth;
     const activeWorldHeight = this.levelTwoPlan ? gameHeight : levelOneWorldHeight;
     this.physics.world.setBounds(0, 0, activeWorldWidth, activeWorldHeight);
     this.cameras.main.setBounds(0, 0, activeWorldWidth, activeWorldHeight);
@@ -725,6 +735,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.preparedWishPlan = interpretLocal(wishText);
+    this.requestGeneratedLevel(wishText, this.preparedWishPlan);
     this.requestRemoteWishPlan(wishText, false);
     this.closeWishDialog();
   }
@@ -747,7 +758,7 @@ export class BootScene extends Phaser.Scene {
         this.isWishTransitioning = false;
         this.input.keyboard?.addCapture(gameplayKeyCodes);
         this.statusText?.setText(
-          `${this.preparedWishPlan!.title} prepared — reach the shrine.`,
+          `${this.preparedWishPlan!.title} prepared — a new path is forming.`,
         );
         this.physics.resume();
       },
@@ -770,11 +781,19 @@ export class BootScene extends Phaser.Scene {
           return;
         }
 
+        const outcomeChanged = this.preparedWishPlan?.id !== plan.id;
         this.preparedWishPlan = plan;
+        if (isRequired || outcomeChanged) {
+          this.requestGeneratedLevel(wishText, plan);
+        }
         if (isRequired) {
           this.closeWishDialog();
         } else {
-          this.statusText?.setText(`${plan.title} ready — reach the shrine.`);
+          this.statusText?.setText(
+            this.preparedLevel
+              ? `${this.preparedLevel.name} formed — reach the Wishing Gate.`
+              : `${plan.title} ready — a new path is forming.`,
+          );
         }
       })
       .catch(() => {
@@ -782,6 +801,30 @@ export class BootScene extends Phaser.Scene {
           this.handleRemoteWishFailure();
         }
       });
+  }
+
+  private requestGeneratedLevel(wishText: string, plan: WishPlan): void {
+    const requestId = ++this.remoteLevelRequestId;
+    this.preparedLevel = undefined;
+    const generationWish = wishText.trim() || "I wish for a new path";
+
+    void generateRemoteLevel(generationWish, plan).then((level) => {
+      if (
+        requestId !== this.remoteLevelRequestId ||
+        this.levelTwoPlan ||
+        !this.scene.isActive() ||
+        this.preparedWishPlan?.id !== plan.id
+      ) {
+        return;
+      }
+
+      if (level) {
+        this.preparedLevel = level;
+        this.statusText?.setText(`${level.name} formed — reach the Wishing Gate.`);
+      } else {
+        this.statusText?.setText(`${plan.title} ready — the proven path awaits.`);
+      }
+    });
   }
 
   private handleRemoteWishFailure(): void {
@@ -807,7 +850,10 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.physics.pause();
-    this.scene.restart({ plan: this.preparedWishPlan });
+    this.scene.restart({
+      plan: this.preparedWishPlan,
+      level: this.preparedLevel,
+    });
   }
 
   private createWishLevel(plan: WishPlan): void {
@@ -820,20 +866,28 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(0);
 
-    const platforms = this.createWishRoute(plan);
+    const generatedLevel = this.levelTwoMap;
+    const platforms = generatedLevel
+      ? this.createGeneratedRoute(generatedLevel)
+      : this.createWishRoute(plan);
+    const spawn = generatedLevel?.spawn ?? { x: 64, y: 80 };
+    const goal = generatedLevel?.goal ?? { x: 1028, surfaceY: groundTop };
 
-    this.player = new Player(this, 64, 80);
+    this.player = new Player(this, spawn.x, spawn.y);
     applyWish(this.player, plan);
     platforms.forEach(
       (platform) => this.physics.add.collider(this.player!, platform),
     );
+    if (generatedLevel) {
+      this.createGeneratedCheckpoints(generatedLevel);
+    }
 
     const portal = this.add
-      .sprite(1028, groundTop, assetKeys.portal)
+      .sprite(goal.x, goal.surfaceY, assetKeys.portal)
       .setOrigin(0.5, 1)
       .setDepth(4)
       .play(assetKeys.portalAnimation);
-    const portalTrigger = this.add.zone(1028, groundTop - 28, 34, 56);
+    const portalTrigger = this.add.zone(goal.x, goal.surfaceY - 28, 34, 56);
     this.physics.add.existing(portalTrigger, true);
     this.physics.add.overlap(this.player, portalTrigger, () => this.finishWish(plan));
 
@@ -853,11 +907,16 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(10);
     this.statusText = this.add
-      .text(12, 18, "Reach the violet portal", {
+      .text(
+        12,
+        18,
+        generatedLevel ? `${generatedLevel.name} · Reach the portal` : "Reach the violet portal",
+        {
         color: plan.accentColor,
         fontFamily: "monospace",
         fontSize: "7px",
-      })
+        },
+      )
       .setScrollFactor(0)
       .setDepth(10);
 
@@ -885,6 +944,46 @@ export class BootScene extends Phaser.Scene {
       this.createTerrainStrip(376, 144, 4, 1),
       this.createTerrainStrip(452, 112, 4, 1),
     ];
+  }
+
+  private createGeneratedRoute(level: GeneratedLevel): Phaser.GameObjects.Zone[] {
+    const platforms = level.terrain.map(({ x, y, widthInTiles, heightInTiles }) =>
+      this.createTerrainStrip(x, y, widthInTiles, heightInTiles),
+    );
+
+    level.props.forEach(({ kind, x, y, flipX }) => {
+      this.add
+        .image(x, y, propAssetKeys[kind])
+        .setOrigin(0.5, 1)
+        .setFlipX(flipX)
+        .setDepth(kind === "tree" ? 1 : 2);
+    });
+
+    return platforms;
+  }
+
+  private createGeneratedCheckpoints(level: GeneratedLevel): void {
+    level.checkpoints.forEach((checkpoint, index) => {
+      const checkpointId = `generated-${index}`;
+      const trigger = this.add.zone(
+        checkpoint.triggerX,
+        gameHeight / 2,
+        tileSize * 2,
+        gameHeight,
+      );
+      this.physics.add.existing(trigger, true);
+      this.physics.add.overlap(this.player!, trigger, () => {
+        if (this.reachedCheckpoints.has(checkpointId)) {
+          return;
+        }
+        this.reachedCheckpoints.add(checkpointId);
+        this.player?.setRespawnPoint(checkpoint.spawnX, checkpoint.spawnY);
+        this.statusText?.setText(`Checkpoint · ${level.name}`);
+        this.time.delayedCall(900, () =>
+          this.statusText?.setText(`${level.name} · Reach the portal`),
+        );
+      });
+    });
   }
 
   private showWishNarration(plan: WishPlan): void {
@@ -953,7 +1052,9 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(21);
-    this.input.keyboard?.once("keydown-R", () => this.scene.restart({ plan }));
+    this.input.keyboard?.once("keydown-R", () =>
+      this.scene.restart({ plan, level: this.levelTwoMap }),
+    );
   }
 
   private handleOrcContact(orc: Orc): void {

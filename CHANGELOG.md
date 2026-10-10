@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T03:10:55+05:30 — Generate the next map during Level 1
+
+- Changed: Added project-owned runtime map-design skill files, a strict `GeneratedLevel` schema, server and browser validators, the `/api/level` endpoint, background generation after wish submission, generated terrain/prop/checkpoint/portal rendering, generated-map replay, and an automatic fixed-route fallback.
+- Why: Let OpenAI design a unique, safe next map while the player is still traversing Level 1 without allowing generated code, unknown assets, arbitrary physics, or an API delay at the Wishing Gate.
+- Affected: `server/skills/map-designer/SKILL.md`, `server/skills/map-designer/LEVEL_FORMAT.md`, `server/index.mjs`, `src/game/levels/generatedLevel.ts`, `src/wishes/generateRemoteLevel.ts`, `src/game/scenes/BootScene.ts`, `.env.example`, `README.md`, and `docs/ARCHITECTURE.md`.
+- Validation: `npm run build` passed. A live OpenAI request produced the validated 1,840 px “Skybloom Sprint” map while Level 1 remained active. Browser testing rendered that map, physics-tested all 11 mandatory jumps, verified both generated checkpoints, reached its generated portal, replayed the same map with `R`, and confirmed that a missing generated map still loads the 1,104 px fixed route.
+- Limitations: Generated maps currently support the single-player `parkour` format and the Grassland allowlist. The tested live request took roughly 24 seconds. Multiplayer synchronization and multiplayer-specific map schemas are not implemented.
+
 ## 2026-10-11T02:47:06+05:30 — Rebuild Level 1 as a handcrafted Grassland world
 
 - Changed: Replaced the three-screen placeholder with a 5,888 x 208 px, seven-area Level 1 driven by typed placement data. Added verified terrain edges/corners, split lower and optional upper routes, top-only thin platforms, parallax clouds, the wooden crossing, animated butterflies/water/bubbles/entry, six section checkpoints, three relocated Orc patrols, and an asset-backed violet Wishing Gate.

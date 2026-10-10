@@ -1,10 +1,126 @@
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 
 const port = Number(process.env.PORT ?? 3001);
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_MODEL ?? "gpt-6-astra";
+const mapModel = process.env.OPENAI_MAP_MODEL ?? model;
 const maximumBodyBytes = 4_096;
 const allowedPlanIds = new Set(["flight", "fire"]);
+const allowedWorldWidths = new Set([1472, 1840, 2208, 2576, 2944]);
+const allowedSurfaceYs = new Set([80, 96, 112, 128, 144, 160, 176]);
+const allowedPropKinds = new Set([
+  "tree",
+  "bush",
+  "stoneSmall",
+  "stoneMedium",
+  "stoneLarge",
+  "tallGrassOne",
+  "tallGrassTwo",
+  "flowerOne",
+  "flowerTwo",
+  "flowerThree",
+  "grassUp",
+  "choppedTree",
+  "loneTrunk",
+]);
+const mapSkill = await readFile(
+  new URL("./skills/map-designer/SKILL.md", import.meta.url),
+  "utf8",
+);
+const mapLevelFormat = await readFile(
+  new URL("./skills/map-designer/LEVEL_FORMAT.md", import.meta.url),
+  "utf8",
+);
+
+const generatedLevelSchema = {
+  type: "object",
+  properties: {
+    version: { type: "integer", enum: [1] },
+    mode: { type: "string", enum: ["parkour"] },
+    name: { type: "string", minLength: 1, maxLength: 28 },
+    designSeed: { type: "string" },
+    worldWidth: { type: "integer", enum: [...allowedWorldWidths] },
+    spawn: {
+      type: "object",
+      properties: {
+        x: { type: "integer", minimum: 16, maximum: 320 },
+        y: { type: "integer", minimum: 80, maximum: 160 },
+      },
+      required: ["x", "y"],
+      additionalProperties: false,
+    },
+    goal: {
+      type: "object",
+      properties: {
+        x: { type: "integer", minimum: 1024, maximum: 2928 },
+        surfaceY: { type: "integer", enum: [...allowedSurfaceYs] },
+      },
+      required: ["x", "surfaceY"],
+      additionalProperties: false,
+    },
+    terrain: {
+      type: "array",
+      minItems: 8,
+      maxItems: 18,
+      items: {
+        type: "object",
+        properties: {
+          x: { type: "integer", minimum: 0, maximum: 2928 },
+          y: { type: "integer", enum: [...allowedSurfaceYs] },
+          widthInTiles: { type: "integer", minimum: 4, maximum: 24 },
+          heightInTiles: { type: "integer", minimum: 1, maximum: 8 },
+        },
+        required: ["x", "y", "widthInTiles", "heightInTiles"],
+        additionalProperties: false,
+      },
+    },
+    props: {
+      type: "array",
+      maxItems: 28,
+      items: {
+        type: "object",
+        properties: {
+          kind: { type: "string", enum: [...allowedPropKinds] },
+          x: { type: "integer", minimum: 16, maximum: 2928 },
+          y: { type: "integer", enum: [...allowedSurfaceYs] },
+          flipX: { type: "boolean" },
+        },
+        required: ["kind", "x", "y", "flipX"],
+        additionalProperties: false,
+      },
+    },
+    checkpoints: {
+      type: "array",
+      minItems: 1,
+      maxItems: 4,
+      items: {
+        type: "object",
+        properties: {
+          triggerX: { type: "integer", minimum: 128, maximum: 2864 },
+          spawnX: { type: "integer", minimum: 128, maximum: 2864 },
+          spawnY: { type: "integer", minimum: 40, maximum: 160 },
+        },
+        required: ["triggerX", "spawnX", "spawnY"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: [
+    "version",
+    "mode",
+    "name",
+    "designSeed",
+    "worldWidth",
+    "spawn",
+    "goal",
+    "terrain",
+    "props",
+    "checkpoints",
+  ],
+  additionalProperties: false,
+};
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -36,6 +152,211 @@ function validateWish(wish) {
     throw new Error("Wish must be a non-empty string up to 120 characters.");
   }
   return wish.trim();
+}
+
+function validateOutcome(outcome) {
+  if (!allowedPlanIds.has(outcome)) {
+    throw new Error("Outcome must be flight or fire.");
+  }
+  return outcome;
+}
+
+function isGridAligned(value) {
+  return Number.isInteger(value) && value % 16 === 0;
+}
+
+function maximumGapForRise(rise) {
+  if (rise <= 0) {
+    return 64;
+  }
+  if (rise <= 16) {
+    return 48;
+  }
+  if (rise <= 32) {
+    return 32;
+  }
+  if (rise <= 48) {
+    return 16;
+  }
+  return -1;
+}
+
+function validateGeneratedLevel(candidate, expectedSeed) {
+  if (
+    typeof candidate !== "object" ||
+    candidate === null ||
+    candidate.version !== 1 ||
+    candidate.mode !== "parkour" ||
+    candidate.designSeed !== expectedSeed ||
+    typeof candidate.name !== "string" ||
+    !allowedWorldWidths.has(candidate.worldWidth) ||
+    !Array.isArray(candidate.terrain) ||
+    candidate.terrain.length < 8 ||
+    candidate.terrain.length > 18 ||
+    !Array.isArray(candidate.props) ||
+    candidate.props.length > 28 ||
+    !Array.isArray(candidate.checkpoints) ||
+    candidate.checkpoints.length < 1 ||
+    candidate.checkpoints.length > 4
+  ) {
+    throw new Error("Model returned an invalid generated level.");
+  }
+
+  const name = clampText(candidate.name, 28);
+  if (name.length === 0) {
+    throw new Error("Generated level name is empty.");
+  }
+
+  const terrain = candidate.terrain.map((strip, index) => {
+    if (
+      typeof strip !== "object" ||
+      strip === null ||
+      !isGridAligned(strip.x) ||
+      !allowedSurfaceYs.has(strip.y) ||
+      !Number.isInteger(strip.widthInTiles) ||
+      strip.widthInTiles < 4 ||
+      strip.widthInTiles > 24 ||
+      !Number.isInteger(strip.heightInTiles) ||
+      strip.heightInTiles < 1 ||
+      strip.heightInTiles > 8
+    ) {
+      throw new Error(`Generated terrain strip ${index} is invalid.`);
+    }
+
+    const endX = strip.x + strip.widthInTiles * 16;
+    if (endX > candidate.worldWidth) {
+      throw new Error(`Generated terrain strip ${index} exceeds world bounds.`);
+    }
+
+    const groundHeight = (208 - strip.y) / 16;
+    if (strip.heightInTiles !== 1 && strip.heightInTiles !== groundHeight) {
+      throw new Error(`Generated terrain strip ${index} has an invalid height.`);
+    }
+
+    return {
+      x: strip.x,
+      y: strip.y,
+      widthInTiles: strip.widthInTiles,
+      heightInTiles: strip.heightInTiles,
+    };
+  });
+
+  const first = terrain[0];
+  if (first.x !== 0 || first.y !== 176 || first.widthInTiles < 12 || first.heightInTiles !== 2) {
+    throw new Error("Generated level needs a broad starting ground strip.");
+  }
+
+  for (let index = 1; index < terrain.length; index += 1) {
+    const previous = terrain[index - 1];
+    const current = terrain[index];
+    const previousEnd = previous.x + previous.widthInTiles * 16;
+    const gap = current.x - previousEnd;
+    const rise = previous.y - current.y;
+    const maximumGap = maximumGapForRise(rise);
+
+    if (
+      gap < 0 ||
+      gap > maximumGap ||
+      maximumGap < 0 ||
+      current.y - previous.y > 64
+    ) {
+      throw new Error(`Generated jump ${index - 1} to ${index} is not safe.`);
+    }
+  }
+
+  const last = terrain.at(-1);
+  const lastEnd = last.x + last.widthInTiles * 16;
+  if (last.widthInTiles < 10 || lastEnd < candidate.worldWidth - 96) {
+    throw new Error("Generated level needs a broad final landing.");
+  }
+
+  if (
+    typeof candidate.spawn !== "object" ||
+    candidate.spawn === null ||
+    !isGridAligned(candidate.spawn.x) ||
+    !Number.isInteger(candidate.spawn.y) ||
+    candidate.spawn.x < first.x + 32 ||
+    candidate.spawn.x > first.x + first.widthInTiles * 16 - 32
+  ) {
+    throw new Error("Generated spawn is not on the starting ground.");
+  }
+
+  if (
+    typeof candidate.goal !== "object" ||
+    candidate.goal === null ||
+    !isGridAligned(candidate.goal.x) ||
+    candidate.goal.surfaceY !== last.y ||
+    candidate.goal.x < last.x + 48 ||
+    candidate.goal.x > lastEnd - 48
+  ) {
+    throw new Error("Generated goal is not on the final landing.");
+  }
+
+  const props = candidate.props.map((prop, index) => {
+    if (
+      typeof prop !== "object" ||
+      prop === null ||
+      !allowedPropKinds.has(prop.kind) ||
+      !isGridAligned(prop.x) ||
+      !allowedSurfaceYs.has(prop.y) ||
+      typeof prop.flipX !== "boolean"
+    ) {
+      throw new Error(`Generated prop ${index} is invalid.`);
+    }
+    const support = terrain.find(
+      (strip) =>
+        strip.y === prop.y &&
+        prop.x >= strip.x + 16 &&
+        prop.x <= strip.x + strip.widthInTiles * 16 - 16,
+    );
+    if (!support) {
+      throw new Error(`Generated prop ${index} is not on terrain.`);
+    }
+    return { kind: prop.kind, x: prop.x, y: prop.y, flipX: prop.flipX };
+  });
+
+  const checkpoints = candidate.checkpoints.map((checkpoint, index) => {
+    if (
+      typeof checkpoint !== "object" ||
+      checkpoint === null ||
+      !isGridAligned(checkpoint.triggerX)
+    ) {
+      throw new Error(`Generated checkpoint ${index} is invalid.`);
+    }
+    const support = terrain.find(
+      (strip) =>
+        checkpoint.triggerX >= strip.x + 16 &&
+        checkpoint.triggerX <= strip.x + strip.widthInTiles * 16 - 16,
+    );
+    if (!support) {
+      throw new Error(`Generated checkpoint ${index} is not on safe terrain.`);
+    }
+    const requestedSpawnX = isGridAligned(checkpoint.spawnX)
+      ? checkpoint.spawnX
+      : checkpoint.triggerX;
+    const spawnX = Math.min(
+      Math.max(requestedSpawnX, support.x + 32),
+      support.x + support.widthInTiles * 16 - 32,
+    );
+    return {
+      triggerX: checkpoint.triggerX,
+      spawnX,
+      spawnY: support.y - 40,
+    };
+  });
+
+  return {
+    version: 1,
+    mode: "parkour",
+    name,
+    designSeed: expectedSeed,
+    worldWidth: candidate.worldWidth,
+    spawn: { x: candidate.spawn.x, y: candidate.spawn.y },
+    goal: { x: candidate.goal.x, surfaceY: candidate.goal.surfaceY },
+    terrain,
+    props,
+    checkpoints,
+  };
 }
 
 function clampText(value, maximumLength) {
@@ -130,6 +451,62 @@ async function createWishPlan(wish) {
   return validateModelPlan(JSON.parse(outputText));
 }
 
+async function createGeneratedLevel(wish, outcome) {
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured.");
+  }
+
+  const designSeed = randomUUID();
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: mapModel,
+      input: [
+        {
+          role: "system",
+          content: `${mapSkill}\n\n${mapLevelFormat}\n\nThe server will reject unsafe or unsupported maps. Copy the requested designSeed exactly.`,
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Design the next live Wishbound parkour level.",
+            wish,
+            outcome,
+            designSeed,
+          }),
+        },
+      ],
+      max_output_tokens: 2_600,
+      store: false,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "generated_level",
+          strict: true,
+          schema: generatedLevelSchema,
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI map request failed with status ${response.status}.`);
+  }
+
+  const payload = await response.json();
+  const outputText = extractOutputText(payload);
+  if (!outputText) {
+    throw new Error("OpenAI map response did not include structured output text.");
+  }
+
+  return validateGeneratedLevel(JSON.parse(outputText), designSeed);
+}
+
 function extractOutputText(payload) {
   if (typeof payload?.output_text === "string" && payload.output_text.trim().length > 0) {
     return payload.output_text;
@@ -153,22 +530,40 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  if (request.method !== "POST" || request.url !== "/api/wish") {
+  if (request.method !== "POST") {
     sendJson(response, 404, { error: "Not found." });
     return;
   }
 
   try {
     const body = await readJson(request);
-    const plan = await createWishPlan(validateWish(body.wish));
-    sendJson(response, 200, { plan });
+    const wish = validateWish(body.wish);
+
+    if (request.url === "/api/wish") {
+      const plan = await createWishPlan(wish);
+      sendJson(response, 200, { plan });
+      return;
+    }
+
+    if (request.url === "/api/level") {
+      const level = await createGeneratedLevel(wish, validateOutcome(body.outcome));
+      sendJson(response, 200, { level });
+      return;
+    }
+
+    sendJson(response, 404, { error: "Not found." });
   } catch (error) {
-    console.error("Wish interpretation failed:", error instanceof Error ? error.message : error);
+    const operation = request.url === "/api/level" ? "Map generation" : "Wish interpretation";
+    console.error(`${operation} failed:`, error instanceof Error ? error.message : error);
     const status = error instanceof Error && error.message.includes("not configured") ? 503 : 502;
-    sendJson(response, status, { error: "AI interpretation is unavailable." });
+    sendJson(response, status, {
+      error: request.url === "/api/level"
+        ? "AI map generation is unavailable."
+        : "AI interpretation is unavailable.",
+    });
   }
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`Wish interpreter listening on http://127.0.0.1:${port}`);
+  console.log(`Wish and map server listening on http://127.0.0.1:${port}`);
 });

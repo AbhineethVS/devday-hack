@@ -4,7 +4,7 @@ This is the execution order for an 8-10 hour hackathon build. We complete, verif
 
 ## Decision already made
 
-The available Phase 0 assets are the Grassland environment, Soldier player, and Orc enemy. The Purple Portal file is still missing. The first complete playable consequence is **Flight**; no other wish outcomes are implemented until it is demo-ready.
+The available runtime assets are the Grassland environment, Soldier player, Orc enemy, and Purple Portal. The first complete playable consequence is **Flight**; Fire is the only additional local outcome after the Flight route was accepted.
 
 ## Milestone 1 — Runnable Phaser shell
 
@@ -53,7 +53,7 @@ Stop and simplify if the route cannot be played consistently. Keep collision geo
 
 ## Milestone 4 — Shrine and hardcoded Flight transformation
 
-**Status: Complete — build verification passed on 11 October 2026; browser flow verification pending user review.**
+**Status: Complete — user reviewed the controls and dialog behavior on 11 October 2026.**
 
 Deliver the complete story before adding natural-language interpretation.
 
@@ -72,12 +72,15 @@ This is the mandatory demo backup. Commit and push it before expanding scope.
 
 ## Milestone 5 — Local safe wish interpreter
 
+**Status: Complete — build verification passed on 11 October 2026; browser review pending user.**
+
 Make the wish text matter without using a network.
 
 - Define `WishPlan` and the allowed outcome catalogue.
 - Add a deterministic keyword mapper and a valid Flight fallback.
 - Implement one additional outcome only if Flight is polished—Fire is the preferred second choice.
 - Route narration, title, palette, and mechanics only through `applyWish` and the catalogue.
+- Collect the wish at Level 1 start and retain the prepared local plan until the shrine transition.
 
 Done when both expected and unusual wishes always produce a valid local plan and the game remains playable offline.
 

@@ -3,6 +3,9 @@ import { assetKeys, assetPaths } from "../assets";
 import { gameHeight, gameWidth } from "../dimensions";
 import { Orc } from "../entities/Orc";
 import { gameplayKeyCodes, Player } from "../entities/Player";
+import { applyWish } from "../../wishes/applyWish";
+import { interpretLocal } from "../../wishes/interpretLocal";
+import type { WishPlan } from "../../wishes/types";
 
 const worldWidth = gameWidth * 3;
 const tileSize = 16;
@@ -17,7 +20,8 @@ export class BootScene extends Phaser.Scene {
   private readonly healthSegments: Phaser.GameObjects.Rectangle[] = [];
   private readonly chargeSegments: Phaser.GameObjects.Rectangle[] = [];
   private lastRespawnAt = Number.NEGATIVE_INFINITY;
-  private isFlightLevel = false;
+  private levelTwoPlan?: WishPlan;
+  private preparedWishPlan?: WishPlan;
   private wishDialog?: Phaser.GameObjects.DOMElement;
   private isWishTransitioning = false;
   private isNarrationPlaying = false;
@@ -27,8 +31,12 @@ export class BootScene extends Phaser.Scene {
     super("boot");
   }
 
-  public init(data: { flight?: boolean }): void {
-    this.isFlightLevel = data.flight === true;
+  public init(data: { plan?: WishPlan }): void {
+    this.levelTwoPlan = data.plan;
+    this.preparedWishPlan = undefined;
+    this.isNarrationPlaying = false;
+    this.levelComplete = false;
+    this.isWishTransitioning = false;
   }
 
   public preload(): void {
@@ -164,8 +172,8 @@ export class BootScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    if (this.isFlightLevel) {
-      this.createFlightLevel();
+    if (this.levelTwoPlan) {
+      this.createWishLevel(this.levelTwoPlan);
       return;
     }
 
@@ -186,7 +194,7 @@ export class BootScene extends Phaser.Scene {
     this.physics.add.collider(this.player, firstPlatform);
     this.physics.add.collider(this.player, secondPlatform);
     this.physics.add.collider(this.player, thirdPlatform);
-    this.physics.add.overlap(this.player, shrineTrigger, () => this.openWishDialog());
+    this.physics.add.overlap(this.player, shrineTrigger, () => this.enterShrine());
     this.orcs.forEach((orc) => {
       this.physics.add.collider(orc, ground);
       this.physics.add.collider(
@@ -225,6 +233,7 @@ export class BootScene extends Phaser.Scene {
       .setDepth(10);
 
     this.createHealthBar();
+    this.openWishDialog();
   }
 
   public update(time: number): void {
@@ -239,7 +248,7 @@ export class BootScene extends Phaser.Scene {
       this.handlePlayerAttack(time);
     }
 
-    if (this.isFlightLevel) {
+    if (this.levelTwoPlan) {
       if (this.player && this.player.y > gameHeight + 80) {
         this.player.respawn();
       }
@@ -325,7 +334,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   private openWishDialog(): void {
-    if (this.wishDialog || this.isFlightLevel) {
+    if (this.wishDialog || this.levelTwoPlan) {
       return;
     }
 
@@ -359,17 +368,18 @@ export class BootScene extends Phaser.Scene {
     const input = this.wishDialog.node.querySelector("input");
     form?.addEventListener("submit", (event) => {
       event.preventDefault();
-      this.startFlight();
+      this.acceptWish((input as HTMLInputElement | null)?.value ?? "");
     });
     this.time.delayedCall(180, () => (input as HTMLInputElement | null)?.focus());
   }
 
-  private startFlight(): void {
+  private acceptWish(wishText: string): void {
     if (!this.wishDialog || this.isWishTransitioning) {
       return;
     }
 
     this.isWishTransitioning = true;
+    this.preparedWishPlan = interpretLocal(wishText);
     const dialog = this.wishDialog;
     this.tweens.add({
       targets: dialog,
@@ -382,30 +392,39 @@ export class BootScene extends Phaser.Scene {
         this.wishDialog = undefined;
         this.isWishTransitioning = false;
         this.input.keyboard?.addCapture(gameplayKeyCodes);
-        this.scene.restart({ flight: true });
+        this.statusText?.setText(
+          `${this.preparedWishPlan!.title} prepared — reach the shrine.`,
+        );
+        this.physics.resume();
       },
     });
   }
 
-  private createFlightLevel(): void {
+  private enterShrine(): void {
+    if (!this.preparedWishPlan) {
+      this.openWishDialog();
+      return;
+    }
+
+    this.physics.pause();
+    this.scene.restart({ plan: this.preparedWishPlan });
+  }
+
+  private createWishLevel(plan: WishPlan): void {
     this.add
-      .rectangle(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight, 0x171334, 0.56)
+      .rectangle(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight, plan.overlayColor, 0.56)
       .setScrollFactor(0)
       .setDepth(-1);
     this.add
-      .circle(296, 42, 19, 0xe5dcff, 0.9)
+      .circle(296, 42, 19, plan.lightColor, 0.9)
       .setScrollFactor(0)
       .setDepth(0);
 
-    const firstGround = this.createTerrainStrip(0, groundTop, 22, 2);
-    const middleGround = this.createTerrainStrip(496, groundTop, 14, 2);
-    const finalGround = this.createTerrainStrip(880, groundTop, 14, 2);
-    const firstStep = this.createTerrainStrip(376, 144, 4, 1);
-    const secondStep = this.createTerrainStrip(452, 112, 4, 1);
+    const platforms = this.createWishRoute(plan);
 
     this.player = new Player(this, 64, 80);
-    this.player.enableDoubleJump();
-    [firstGround, middleGround, finalGround, firstStep, secondStep].forEach(
+    applyWish(this.player, plan);
+    platforms.forEach(
       (platform) => this.physics.add.collider(this.player!, platform),
     );
 
@@ -416,7 +435,7 @@ export class BootScene extends Phaser.Scene {
       .play(assetKeys.portalAnimation);
     const portalTrigger = this.add.zone(1028, groundTop - 28, 34, 56);
     this.physics.add.existing(portalTrigger, true);
-    this.physics.add.overlap(this.player, portalTrigger, () => this.finishFlight());
+    this.physics.add.overlap(this.player, portalTrigger, () => this.finishWish(plan));
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.cameras.main.setDeadzone(gameWidth / 3, 0);
@@ -426,7 +445,7 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(9);
     this.add
-      .text(12, 8, "FLIGHT · Arrows run · Up/Space double jump", {
+      .text(12, 8, `${plan.title} · Arrows run · ${plan.controlHint}`, {
         color: "#ffffff",
         fontFamily: "monospace",
         fontSize: "8px",
@@ -435,17 +454,36 @@ export class BootScene extends Phaser.Scene {
       .setDepth(10);
     this.statusText = this.add
       .text(12, 18, "Reach the violet portal", {
-        color: "#dccbff",
+        color: plan.accentColor,
         fontFamily: "monospace",
         fontSize: "7px",
       })
       .setScrollFactor(0)
       .setDepth(10);
 
-    this.showFlightNarration();
+    this.showWishNarration(plan);
   }
 
-  private showFlightNarration(): void {
+  private createWishRoute(plan: WishPlan): Phaser.GameObjects.Zone[] {
+    if (plan.route === "emberGaps") {
+      return [
+        this.createTerrainStrip(0, groundTop, 22, 2),
+        this.createTerrainStrip(376, 144, 4, 1),
+        this.createTerrainStrip(544, groundTop, 12, 2),
+        this.createTerrainStrip(912, groundTop, 12, 2),
+      ];
+    }
+
+    return [
+      this.createTerrainStrip(0, groundTop, 22, 2),
+      this.createTerrainStrip(496, groundTop, 14, 2),
+      this.createTerrainStrip(880, groundTop, 14, 2),
+      this.createTerrainStrip(376, 144, 4, 1),
+      this.createTerrainStrip(452, 112, 4, 1),
+    ];
+  }
+
+  private showWishNarration(plan: WishPlan): void {
     this.isNarrationPlaying = true;
     this.physics.pause();
     const panel = this.add
@@ -453,7 +491,7 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(20);
     const title = this.add
-      .text(gameWidth / 2, gameHeight / 2 - 20, "FLIGHT", {
+      .text(gameWidth / 2, gameHeight / 2 - 20, plan.title, {
         color: "#f1e7ff",
         fontFamily: "monospace",
         fontSize: "18px",
@@ -462,7 +500,7 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(21);
     const narration = this.add
-      .text(gameWidth / 2, gameHeight / 2 + 9, "The night opens beneath your feet.\nPress jump again in the air.", {
+      .text(gameWidth / 2, gameHeight / 2 + 9, plan.narration, {
         color: "#d5c9ee",
         fontFamily: "monospace",
         fontSize: "8px",
@@ -481,7 +519,7 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  private finishFlight(): void {
+  private finishWish(plan: WishPlan): void {
     if (this.levelComplete) {
       return;
     }
@@ -493,7 +531,7 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(20);
     this.add
-      .text(gameWidth / 2, gameHeight / 2 - 10, "WISH FULFILLED", {
+      .text(gameWidth / 2, gameHeight / 2 - 10, `${plan.title} FULFILLED`, {
         color: "#f1e7ff",
         fontFamily: "monospace",
         fontSize: "13px",
@@ -502,7 +540,7 @@ export class BootScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(21);
     this.add
-      .text(gameWidth / 2, gameHeight / 2 + 12, "You carried your wish into the night.\nPress R to fly again.", {
+      .text(gameWidth / 2, gameHeight / 2 + 12, "You carried your wish into the night.\nPress R to play again.", {
         color: "#d5c9ee",
         fontFamily: "monospace",
         fontSize: "8px",
@@ -511,7 +549,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(21);
-    this.input.keyboard?.once("keydown-R", () => this.scene.restart({ flight: true }));
+    this.input.keyboard?.once("keydown-R", () => this.scene.restart({ plan }));
   }
 
   private handleOrcContact(orc: Orc): void {

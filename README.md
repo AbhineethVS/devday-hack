@@ -34,7 +34,7 @@ This template has no application code or required technology stack. The document
 - **Project name:** Wishbound
 - **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and makes the second level a playable consequence.
 - **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** Milestone 4 playable Flight story: Grassland route → shrine wish → moonlit Flight route → portal.
+- **Working demo:** Milestone 5 playable wish story: opening wish → Grassland route → shrine → personalized Flight or Fire route → portal.
 - **Technology stack:** Vite, TypeScript, and Phaser. A small Node API is planned only after the local gameplay loop is complete.
 
 ### Run the project
@@ -46,9 +46,9 @@ This template has no application code or required technology stack. The document
 
 ### Current status
 
-- Working features: A three-screen Grassland route uses layered parallax scenery, terrain, props, three patrolling Orcs, and an interactive shrine. Enter any text at the shrine to apply the offline hardcoded Flight consequence: a moonlit second route that grants the Soldier a double jump and ends at the uploaded animated violet portal. The Soldier can also run, make variable-height jumps, attack with `X`, defeat an Orc in three hits, lose one of five health pips on contact, and spend any earned charge with `F` to restore one health. A full defeat resets the player and all Orcs.
-- Demo walkthrough: Refresh the game, reach the shrine at the far right of the Grassland route, submit any wish, wait for the Flight narration, then use a second Up Arrow or Space press while airborne to cross the moonlit platforms and enter the portal. Press `R` after the completion message to replay.
-- Known limitations: Wish text is accepted but deliberately always maps to Flight; no local wish catalogue, alternative outcome, API integration, audio, or credits screen exists yet. The code-drawn HUD intentionally does not use the locally supplied Pixel UI Pack 3 because its licence/source record is not available.
+- Working features: A wish dialog opens before Level 1, then the Grassland route remains playable while its validated local `WishPlan` is prepared. Reaching the shrine consumes that prepared plan and creates one of two offline outcomes: Flight gives a moonlit route and double jump; Fire gives an ember route and a `C` air dash. Fire-related keywords select Fire; every other wish safely falls back to Flight. The Soldier can also run, make variable-height jumps, attack with `X`, defeat an Orc in three hits, lose one of five health pips on contact, and spend any earned charge with `F` to restore one health.
+- Demo walkthrough: Refresh the game and submit a wish. Try “I wish for fire” for the Fire route, or any other phrase for Flight. Reach the shrine at the far right, read the personalized narration, then use either the second Up Arrow/Space jump (Flight) or `C` while airborne (Fire) to cross the route and enter the uploaded animated violet portal. Press `R` after the completion message to replay.
+- Known limitations: The keyword interpreter has only Flight and Fire, and all unrecognized wishes fall back to Flight. No API integration, audio, or credits screen exists yet. The code-drawn HUD intentionally does not use the locally supplied Pixel UI Pack 3 because its licence/source record is not available.
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Execution order: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)

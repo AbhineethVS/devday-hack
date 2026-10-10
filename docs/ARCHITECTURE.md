@@ -5,12 +5,12 @@
 The first vertical slice is deliberately narrow:
 
 ```text
-Grassland path -> shrine clearing -> wish dialog -> transformed grassland -> exit portal
+Opening wish dialog -> Grassland path -> shrine clearing -> transformed grassland -> exit portal
 ```
 
 It uses the Soldier as the player, the Orc as the sole enemy, a 16 px Grassland tile grid, and a 368 x 208 logical game viewport. Phaser renders at that native pixel resolution; CSS may scale the canvas by an integer only. This keeps the downloaded background layers sharp and lets the camera scroll horizontally over a wider world.
 
-The Flight outcome is the first and required consequence. It grants a double jump and swaps the Level 2 palette/effects. Every other outcome is deferred until this loop is stable.
+The Flight outcome grants a double jump and swaps the Level 2 palette/effects. Fire is the second local outcome; it grants an air dash and an ember route. A local interpreter selects only these pre-approved plans, with Flight as the safe fallback.
 
 ## Runtime layout
 
@@ -59,9 +59,9 @@ server/                             # added only after the local flow works
 ## Scene and state rules
 
 - `BootScene` owns preload and animation definitions. Other scenes only request asset keys; they do not load files themselves.
-- `LevelOneScene` stores no wish state. On shrine contact, it passes control to `ShrineScene`.
-- `ShrineScene` accepts the text input, uses `interpretLocal` first, and later replaces that call with a validated backend response. It always has a locally valid fallback plan.
-- `LevelTwoScene` receives a complete `WishPlan` once, calls `applyWish` once, and never evaluates generated code.
+- The Level 1 scene asks for a wish before gameplay, stores the locally interpreted `WishPlan`, and continues normally after the dialog closes.
+- Shrine contact transfers the already prepared `WishPlan`; later the local interpreter can be replaced with a validated backend response without changing gameplay state.
+- The Level 2 scene receives a complete `WishPlan` once, calls `applyWish` once, and never evaluates generated code.
 - `applyWish` can only select mechanics/assets represented in `catalog.ts`. It cannot create arbitrary sprites, physics values, or scripts.
 
 ## Asset conventions

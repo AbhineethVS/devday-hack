@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:26:02+05:30 — Build Milestone 5 local wish plans
+
+- Changed: Added a typed, allowlisted `WishPlan` catalogue, deterministic keyword interpretation, and a centralized `applyWish` mechanic hook. The opening dialog now prepares a plan before Level 1 starts; the shrine uses that saved plan for Level 2. Flight grants a double jump and moonlit route; Fire-related wishes grant a `C` air dash and ember route. Unknown text falls back to Flight.
+- Why: Make the written wish visibly affect the next level while keeping the offline demo safe and reliable.
+- Affected: `src/wishes/types.ts`, `src/wishes/catalog.ts`, `src/wishes/interpretLocal.ts`, `src/wishes/applyWish.ts`, `src/game/entities/Player.ts`, `src/game/scenes/BootScene.ts`, `README.md`, and `docs/ARCHITECTURE.md`.
+- Validation: `npm run build` passed.
+- Limitations: The interpreter recognizes a narrow Fire keyword set and otherwise selects Flight. It does not use a network model yet.
+
 ## 2026-10-11T01:10:45+05:30 — Fix wish-field keyboard ownership
 
 - Changed: Removed gameplay key captures while the shrine dialog is open and restored them only after its closing transition. The paused scene continues to ignore player updates, so typing—including spaces, `F`, and movement keys—only edits the wish field.

@@ -8,6 +8,7 @@ const maximumHealth = 5;
 const maximumCharge = 5;
 const attackDuration = 260;
 const invulnerabilityDuration = 900;
+const airDashVelocity = 245;
 
 export const gameplayKeyCodes = [
   Phaser.Input.Keyboard.KeyCodes.LEFT,
@@ -16,6 +17,7 @@ export const gameplayKeyCodes = [
   Phaser.Input.Keyboard.KeyCodes.SPACE,
   Phaser.Input.Keyboard.KeyCodes.X,
   Phaser.Input.Keyboard.KeyCodes.F,
+  Phaser.Input.Keyboard.KeyCodes.C,
 ];
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -23,6 +25,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly spaceKey: Phaser.Input.Keyboard.Key;
   private readonly attackKey: Phaser.Input.Keyboard.Key;
   private readonly healKey: Phaser.Input.Keyboard.Key;
+  private readonly dashKey: Phaser.Input.Keyboard.Key;
   private readonly spawnPoint: Phaser.Math.Vector2;
   private wasJumpHeld = false;
   private facingDirection = 1;
@@ -31,6 +34,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private health = maximumHealth;
   private charge = 0;
   private doubleJumpEnabled = false;
+  private airDashEnabled = false;
+  private airDashAvailable = false;
   private jumpsUsed = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -50,6 +55,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.attackKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     this.healKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    this.dashKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     scene.input.keyboard.addCapture(gameplayKeyCodes);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -57,7 +63,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Soldier's visible body, placing its feet on a 16px terrain tile.
     body.setSize(18, 21);
     body.setOffset(40, 38);
-    body.setMaxVelocity(moveSpeed, 560);
+    body.setMaxVelocity(airDashVelocity, 560);
 
     this.play(assetKeys.soldierIdleAnimation);
   }
@@ -100,12 +106,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const isGrounded = body.blocked.down || body.touching.down;
     if (isGrounded) {
       this.jumpsUsed = 0;
+      this.airDashAvailable = this.airDashEnabled;
     }
 
     const canJump = isGrounded || (this.doubleJumpEnabled && this.jumpsUsed < 2);
     if (jumpStarted && canJump) {
       body.setVelocityY(-jumpVelocity);
       this.jumpsUsed += 1;
+    }
+
+    const dashStarted = Phaser.Input.Keyboard.JustDown(this.dashKey);
+    if (dashStarted && this.airDashEnabled && this.airDashAvailable && !isGrounded) {
+      body.setVelocity(this.facingDirection * airDashVelocity, 0);
+      this.airDashAvailable = false;
     }
 
     if (this.wasJumpHeld && !jumpHeld && body.velocity.y < 0) {
@@ -174,12 +187,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.doubleJumpEnabled = true;
   }
 
+  public enableAirDash(): void {
+    this.airDashEnabled = true;
+    this.airDashAvailable = true;
+  }
+
   public respawn(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.setPosition(this.spawnPoint.x, this.spawnPoint.y);
     body.setVelocity(0, 0);
     this.wasJumpHeld = false;
     this.jumpsUsed = 0;
+    this.airDashAvailable = this.airDashEnabled;
     this.clearTint();
   }
 }

@@ -38,25 +38,38 @@ function validateWish(wish) {
   return wish.trim();
 }
 
+function clampText(value, maximumLength) {
+  const text = value.replace(/\s+/g, " ").trim();
+  if (text.length <= maximumLength) {
+    return text;
+  }
+
+  const truncated = text.slice(0, maximumLength).trimEnd();
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace >= Math.floor(maximumLength * 0.6) ? truncated.slice(0, lastSpace) : truncated).trimEnd();
+}
+
 function validateModelPlan(candidate) {
   if (
     typeof candidate !== "object" ||
     candidate === null ||
     !allowedPlanIds.has(candidate.id) ||
     typeof candidate.title !== "string" ||
-    typeof candidate.narration !== "string" ||
-    candidate.title.trim().length === 0 ||
-    candidate.title.length > 28 ||
-    candidate.narration.trim().length === 0 ||
-    candidate.narration.length > 130
+    typeof candidate.narration !== "string"
   ) {
+    throw new Error("Model returned an invalid wish plan.");
+  }
+
+  const title = clampText(candidate.title, 28);
+  const narration = clampText(candidate.narration, 130);
+  if (title.length === 0 || narration.length === 0) {
     throw new Error("Model returned an invalid wish plan.");
   }
 
   return {
     id: candidate.id,
-    title: candidate.title.trim(),
-    narration: candidate.narration.trim(),
+    title,
+    narration,
   };
 }
 
@@ -77,11 +90,11 @@ async function createWishPlan(wish) {
         {
           role: "system",
           content:
-            "Interpret a platformer wish. Select only flight or fire. Return a short evocative title and two-sentence narration for the selected allowed outcome. Never provide code, instructions, or other outcome IDs.",
+            "Interpret a platformer wish. Select only flight or fire. Return a short evocative title (max 28 characters) and a compact two-sentence narration (max 130 characters) for the selected allowed outcome. Never provide code, instructions, or other outcome IDs.",
         },
         { role: "user", content: wish },
       ],
-      max_output_tokens: 90,
+      max_output_tokens: 180,
       store: false,
       text: {
         format: {
@@ -109,11 +122,29 @@ async function createWishPlan(wish) {
   }
 
   const payload = await response.json();
-  if (typeof payload.output_text !== "string") {
+  const outputText = extractOutputText(payload);
+  if (!outputText) {
     throw new Error("OpenAI response did not include structured output text.");
   }
 
-  return validateModelPlan(JSON.parse(payload.output_text));
+  return validateModelPlan(JSON.parse(outputText));
+}
+
+function extractOutputText(payload) {
+  if (typeof payload?.output_text === "string" && payload.output_text.trim().length > 0) {
+    return payload.output_text;
+  }
+
+  const chunks = [];
+  for (const item of Array.isArray(payload?.output) ? payload.output : []) {
+    for (const part of Array.isArray(item?.content) ? item.content : []) {
+      if (part?.type === "output_text" && typeof part.text === "string" && part.text.trim().length > 0) {
+        chunks.push(part.text);
+      }
+    }
+  }
+
+  return chunks.length > 0 ? chunks.join("") : null;
 }
 
 const server = createServer(async (request, response) => {
@@ -132,6 +163,7 @@ const server = createServer(async (request, response) => {
     const plan = await createWishPlan(validateWish(body.wish));
     sendJson(response, 200, { plan });
   } catch (error) {
+    console.error("Wish interpretation failed:", error instanceof Error ? error.message : error);
     const status = error instanceof Error && error.message.includes("not configured") ? 503 : 502;
     sendJson(response, status, { error: "AI interpretation is unavailable." });
   }

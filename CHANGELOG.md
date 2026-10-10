@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T02:05:30+05:30 — Fix live wish interpretation failures
+
+- Changed: The wish server now reads structured plan JSON from nested `output[].content[].text` when the Responses API omits top-level `output_text`, raises `max_output_tokens` so JSON is not cut mid-string, clamps overlong title/narration instead of rejecting them, and asks the model to stay within the UI length limits.
+- Why: Live `gpt-6-astra` responses returned HTTP 200 without `output_text`, often truncated JSON at 90 output tokens, and sometimes exceeded the 130-character narration cap, so the game showed "AI unavailable" under `VITE_REQUIRE_AI=true`.
+- Affected: `server/index.mjs`.
+- Validation: Posted a sample wish to `http://127.0.0.1:3001/api/wish` after restart and received HTTP 200 with a validated Flight plan.
+- Limitations: Failures still surface as a generic unavailable message; overlong model text is truncated to fit the UI.
+
 ## 2026-10-11T01:55:57+05:30 — Add AI-only wish test mode
 
 - Changed: Added `VITE_REQUIRE_AI=true` as an opt-in test mode. It keeps the opening dialog active until the server returns a valid model plan, and shows an error without starting the level if interpretation fails.

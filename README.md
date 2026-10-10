@@ -29,28 +29,25 @@ Keep your approved Luma QR code ready for entry, and bring your laptop and charg
 
 This template has no application code or required technology stack. The documentation and commit cadence are repository workflow guidance; the event participation rules are in [RULES.md](RULES.md).
 
-## Project overview — complete during the event
+## Project overview
 
-- **Project name:** TODO
-- **Short description:** TODO — what it does, who it helps, and why it matters.
+- **Project name:** Wishbound
+- **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and makes the second level a playable consequence.
 - **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** TODO — link or local demo instructions.
-- **Technology stack:** TODO
+- **Working demo:** Not built yet. The first demo route is Grassland path → shrine → Flight consequence → portal.
+- **Technology stack:** Planned: Vite, TypeScript, Phaser, and a small Node API added after the local gameplay loop is complete.
 
 ### Run the project
 
 Replace these placeholders with commands that actually work for your project:
 
-1. Prerequisites and versions: TODO
-2. Dependency installation: TODO
-3. Environment setup: TODO — list required variable names and provide a sanitized `.env.example` if needed.
-4. Start the project: TODO
-5. Run checks or tests: TODO
+The application scaffold has not been created yet. Setup, run, and verification commands will be recorded here once they exist.
 
 ### Current status
 
-- Working features: TODO
-- Known limitations: TODO
-- Libraries, APIs, and public datasets used: TODO — include source links and applicable attribution.
+- Working features: Runtime-ready Grassland, Soldier, and Orc asset files are organised under `public/assets`.
+- Known limitations: No runnable game client, portal source file, or AI integration yet. Only the Soldier and Orc are available from the free character download.
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.

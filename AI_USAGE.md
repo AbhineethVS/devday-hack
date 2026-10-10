@@ -4,11 +4,9 @@ Use Codex during the hackathon and briefly document its actual contribution here
 
 ## Event build log
 
-No participant AI usage has been recorded yet. Replace the placeholder row as you build. Mark human review as pending until someone has reviewed the contribution.
-
 | Date and time with timezone | Tool / model, if known | Task | Assistance and affected files | Human review / corrections | Validation and result |
 | --- | --- | --- | --- | --- | --- |
-| TODO | Codex | TODO | TODO | Pending | TODO |
+| 2026-10-10T22:59:08+05:30 | Codex | Asset inventory and project architecture | Inspected the downloaded packs, selected runtime-ready files, organised them under `public/assets`, and documented the Phaser scene/state architecture in `docs/ARCHITECTURE.md` and attribution in `docs/ASSETS.md`. | Pending human review | Verified file layout, included terrain licence text, confirmed 16 px terrain grid, five background layers, and eight-frame 100 x 100 character walk strips. |
 
 ## Template preparation
 

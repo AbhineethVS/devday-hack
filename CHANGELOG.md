@@ -4,6 +4,45 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T03:38:00+05:30 — Add AI-authored dungeon adventures and wish avatars
+
+- Changed: Replaced the generated-map runtime with a strict version 2 adventure
+  contract authored in one structured-output request: a detailed Grassland
+  route, one portal, one nested dungeon, and either capped orc waves or one
+  giant-orc boss. Added semantic dungeon atlas rendering, animated torches,
+  generated water/bridges/ambience, combat checkpoints, arena barriers, a
+  locked completion exit, and boss/wave HUD feedback.
+- Changed: Added a validated wish-avatar contract and `/api/avatar` image
+  endpoint. Level 1 keeps the animated Soldier; Level 2 onward can preload a
+  transparent wish-specific pixel-art hero at 48 x 48 while code applies only
+  `swiftRun`, `doubleJump`, or `airDash`. Server and browser in-memory caches
+  deduplicate image work, and failed image generation falls back to the Soldier
+  without changing adventure data.
+- Why: Deliver one coherent AI-authored outdoor-to-dungeon story while allowing
+  the player's exact wish to change the visible hero without allowing generated
+  pixels or text to control physics, combat, health, or arbitrary abilities.
+- Affected: `server/adventure-contract.mjs`,
+  `server/adventure-contract.test.mjs`, `server/index.mjs`,
+  `server/skills/map-designer/`, `src/game/levels/generatedLevel.ts`,
+  `src/game/levels/dungeonAtlas.ts`, `src/game/scenes/BootScene.ts`,
+  `src/game/entities/Player.ts`, `src/game/entities/Orc.ts`,
+  `src/wishes/generateRemoteLevel.ts`, `src/wishes/generateRemoteAvatar.ts`,
+  `src/game/assets.ts`, the two dungeon runtime PNGs, setup files, and project
+  documentation.
+- Validation: `npm test` passed the wave, boss, exact-seed, encounter-cap,
+  avatar-mechanic, and safe-normalization fixtures. `npm run build` passed, IDE
+  diagnostics reported no errors, and server modules passed `node --check`.
+  Browser fixture checks rendered the resized transparent wish hero in both
+  areas, rendered the dungeon catalogue and animated torches, verified a locked
+  giant-boss arena, and advanced two three-orc waves before unlocking the exit.
+  A live horse-wish image request returned HTTP 200 with a validated 1,894,142
+  character transparent PNG data URL; repeating it returned `cacheHit: true`.
+- Limitations: Live structured requests can still be rejected when model
+  placement violates cross-field support rules; the tested deterministic route
+  remains the fallback. Generated appearance is one static image rather than an
+  animation, and image caches reset with the browser/server process. Vite keeps
+  its existing Phaser large-chunk warning.
+
 ## 2026-10-11T03:10:55+05:30 — Generate the next map during Level 1
 
 - Changed: Added project-owned runtime map-design skill files, a strict `GeneratedLevel` schema, server and browser validators, the `/api/level` endpoint, background generation after wish submission, generated terrain/prop/checkpoint/portal rendering, generated-map replay, and an automatic fixed-route fallback.

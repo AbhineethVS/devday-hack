@@ -1,6 +1,6 @@
 import {
-  validateGeneratedLevel,
-  type GeneratedLevel,
+  validateGeneratedAdventure,
+  type GeneratedAdventure,
 } from "../game/levels/generatedLevel";
 import type { WishPlan } from "./types";
 
@@ -11,7 +11,7 @@ type ApiGeneratedLevel = {
 export async function generateRemoteLevel(
   wishText: string,
   plan: WishPlan,
-): Promise<GeneratedLevel | null> {
+): Promise<GeneratedAdventure | null> {
   try {
     const response = await fetch("/api/level", {
       method: "POST",
@@ -25,7 +25,7 @@ export async function generateRemoteLevel(
     }
 
     const payload = (await response.json()) as ApiGeneratedLevel;
-    return validateGeneratedLevel(payload.level);
+    return validateGeneratedAdventure(payload.level);
   } catch {
     return null;
   }

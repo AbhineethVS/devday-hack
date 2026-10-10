@@ -1,12 +1,19 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import {
+  generatedAdventureSchema,
+  validateGeneratedAdventure,
+} from "./adventure-contract.mjs";
 
 const port = Number(process.env.PORT ?? 3001);
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_MODEL ?? "gpt-6-astra";
 const mapModel = process.env.OPENAI_MAP_MODEL ?? model;
+const imageModel = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1";
 const maximumBodyBytes = 4_096;
+const avatarCache = new Map();
+const maximumAvatarCacheEntries = 24;
 const allowedPlanIds = new Set(["flight", "fire"]);
 const allowedWorldWidths = new Set([1472, 1840, 2208, 2576, 2944]);
 const allowedSurfaceYs = new Set([80, 96, 112, 128, 144, 160, 176]);
@@ -159,6 +166,17 @@ function validateOutcome(outcome) {
     throw new Error("Outcome must be flight or fire.");
   }
   return outcome;
+}
+
+function validateAppearancePrompt(value) {
+  if (typeof value !== "string") {
+    throw new Error("Appearance prompt must be a string.");
+  }
+  const prompt = value.replace(/\s+/g, " ").trim();
+  if (prompt.length < 8 || prompt.length > 240) {
+    throw new Error("Appearance prompt must be 8 to 240 characters.");
+  }
+  return prompt;
 }
 
 function isGridAligned(value) {
@@ -451,7 +469,7 @@ async function createWishPlan(wish) {
   return validateModelPlan(JSON.parse(outputText));
 }
 
-async function createGeneratedLevel(wish, outcome) {
+async function createGeneratedAdventure(wish, outcome) {
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
@@ -468,30 +486,30 @@ async function createGeneratedLevel(wish, outcome) {
       input: [
         {
           role: "system",
-          content: `${mapSkill}\n\n${mapLevelFormat}\n\nThe server will reject unsafe or unsupported maps. Copy the requested designSeed exactly.`,
+          content: `${mapSkill}\n\n${mapLevelFormat}\n\nThe server will reject unsafe or unsupported adventures. Copy the requested designSeed exactly. Author the outdoor route and its one nested dungeon together. Choose either a huge bounded orc wave encounter or one giant orc boss.`,
         },
         {
           role: "user",
           content: JSON.stringify({
-            task: "Design the next live Wishbound parkour level.",
+            task: "Design one complete Wishbound outdoor-to-dungeon adventure.",
             wish,
             outcome,
             designSeed,
           }),
         },
       ],
-      max_output_tokens: 2_600,
+      max_output_tokens: 7_200,
       store: false,
       text: {
         format: {
           type: "json_schema",
-          name: "generated_level",
+          name: "generated_adventure",
           strict: true,
-          schema: generatedLevelSchema,
+          schema: generatedAdventureSchema,
         },
       },
     }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(90_000),
   });
 
   if (!response.ok) {
@@ -504,7 +522,65 @@ async function createGeneratedLevel(wish, outcome) {
     throw new Error("OpenAI map response did not include structured output text.");
   }
 
-  return validateGeneratedLevel(JSON.parse(outputText), designSeed);
+  return validateGeneratedAdventure(JSON.parse(outputText), designSeed);
+}
+
+async function createAvatarImage(wish, appearancePrompt) {
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured.");
+  }
+  const cacheKey = createHash("sha256")
+    .update(`${wish.toLowerCase()}\n${appearancePrompt.toLowerCase()}`)
+    .digest("hex");
+  const cached = avatarCache.get(cacheKey);
+  if (cached) {
+    return { imageDataUrl: cached, cacheHit: true };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: imageModel,
+      prompt: [
+        "Create one transparent-background pixel-art game character sprite.",
+        "Show one complete readable side-view hero, centered, with no scenery, text, border, UI, floor, or shadow.",
+        "Use crisp deliberate pixel clusters, a limited high-contrast fantasy palette, and a silhouette readable at 48 pixels tall.",
+        "The base hero is a small armored soldier. Transform the visible hero precisely around this player's wish:",
+        wish,
+        "Required appearance:",
+        appearancePrompt,
+        "Appearance only: do not depict gameplay statistics, controls, or written labels.",
+      ].join(" "),
+      size: "1024x1024",
+      quality: "low",
+      background: "transparent",
+      output_format: "png",
+    }),
+    signal: AbortSignal.timeout(90_000),
+  });
+  if (!response.ok) {
+    throw new Error(`OpenAI image request failed with status ${response.status}.`);
+  }
+  const payload = await response.json();
+  const base64 = payload?.data?.[0]?.b64_json;
+  if (
+    typeof base64 !== "string" ||
+    base64.length < 100 ||
+    base64.length > 14_000_000 ||
+    !/^[A-Za-z0-9+/=]+$/.test(base64)
+  ) {
+    throw new Error("OpenAI image response did not include a valid PNG payload.");
+  }
+  const imageDataUrl = `data:image/png;base64,${base64}`;
+  avatarCache.set(cacheKey, imageDataUrl);
+  if (avatarCache.size > maximumAvatarCacheEntries) {
+    avatarCache.delete(avatarCache.keys().next().value);
+  }
+  return { imageDataUrl, cacheHit: false };
 }
 
 function extractOutputText(payload) {
@@ -546,20 +622,35 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.url === "/api/level") {
-      const level = await createGeneratedLevel(wish, validateOutcome(body.outcome));
+      const level = await createGeneratedAdventure(wish, validateOutcome(body.outcome));
       sendJson(response, 200, { level });
+      return;
+    }
+
+    if (request.url === "/api/avatar") {
+      const avatar = await createAvatarImage(
+        wish,
+        validateAppearancePrompt(body.appearancePrompt),
+      );
+      sendJson(response, 200, avatar);
       return;
     }
 
     sendJson(response, 404, { error: "Not found." });
   } catch (error) {
-    const operation = request.url === "/api/level" ? "Map generation" : "Wish interpretation";
+    const operation = request.url === "/api/level"
+      ? "Map generation"
+      : request.url === "/api/avatar"
+        ? "Avatar generation"
+        : "Wish interpretation";
     console.error(`${operation} failed:`, error instanceof Error ? error.message : error);
     const status = error instanceof Error && error.message.includes("not configured") ? 503 : 502;
     sendJson(response, status, {
       error: request.url === "/api/level"
         ? "AI map generation is unavailable."
-        : "AI interpretation is unavailable.",
+        : request.url === "/api/avatar"
+          ? "AI avatar generation is unavailable."
+          : "AI interpretation is unavailable.",
     });
   }
 });

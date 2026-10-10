@@ -29,6 +29,26 @@ Level 1 runtime use:
 - Licence stated on the source page: permitted in personal and commercial video-game projects, and may be modified for those projects. The assets must not be redistributed, resold, or re-uploaded as assets. Credit is appreciated but not required.
 - Imported: Soldier idle/walk/attack/hurt/death strips, one arrow strip, and Orc idle/walk/attack/hurt/death strips.
 
+### Dark Dungeon — Side-Scroller Tileset
+
+- Source: <https://raou.itch.io/dark-dun>
+- Creator: Raou
+- Imported runtime files: `public/assets/world/dungeon/Tilesetv3.png` and
+  `public/assets/world/dungeon/spr_torch.png`.
+- Source dimensions: the main atlas is 272 x 832 on a 16 x 16 tile grid; the
+  animated torch strip is 84 x 27 with four 21 x 27 frames.
+- Runtime use: dungeon terrain, arches, doors, windows, shelves, furniture,
+  graves, statues, bars, spikes, props, and animated torches. Generated data
+  uses semantic names; `src/game/levels/dungeonAtlas.ts` owns source regions.
+- Terms stated by Raou on the source page: purchasers may use and modify the
+  tileset in any number of commercial or non-commercial projects, but may not
+  redistribute the tileset itself in any way. Raou also states that credit is
+  appreciated but not mandatory. The page does not name a standard licence.
+- Repository handling: these two PNGs are included only as runtime game assets
+  for Wishbound. They are not offered as a reusable asset pack; downstream
+  users must obtain redistribution/use rights from Raou and should not extract
+  or redistribute them separately.
+
 ## Deliberately not imported
 
 ### Raven Fantasy Icons
@@ -56,4 +76,5 @@ The finished credits screen should include:
 Grassland environment: Shackhal — CC0
 Character sprites: Zerie — Tiny RPG Character Asset Pack 01
 Portal sprite: Elthen's Pixel Art Shop
+Dungeon environment: Raou — Dark Dungeon
 ```

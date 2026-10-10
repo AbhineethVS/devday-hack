@@ -54,6 +54,9 @@ export const assetKeys = {
   orcHurtAnimation: "orc-hurt-animation",
   orcDeath: "orc-death",
   orcDeathAnimation: "orc-death-animation",
+  dungeonAtlas: "dungeon-atlas",
+  dungeonTorch: "dungeon-torch",
+  dungeonTorchAnimation: "dungeon-torch-animation",
 } as const;
 
 export const assetPaths = {
@@ -107,4 +110,6 @@ export const assetPaths = {
   orcWalk: "/assets/characters/enemies/orc/walk.png",
   orcHurt: "/assets/characters/enemies/orc/hurt.png",
   orcDeath: "/assets/characters/enemies/orc/death.png",
+  dungeonAtlas: "/assets/world/dungeon/Tilesetv3.png",
+  dungeonTorch: "/assets/world/dungeon/spr_torch.png",
 } as const;

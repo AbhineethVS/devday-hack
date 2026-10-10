@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { assetKeys } from "../assets";
 
-const moveSpeed = 120;
+const baseMoveSpeed = 120;
+const swiftRunSpeed = 156;
 const jumpVelocity = 285;
 const shortHopVelocity = 135;
 const maximumHealth = 5;
@@ -37,6 +38,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private airDashEnabled = false;
   private airDashAvailable = false;
   private jumpsUsed = 0;
+  private moveSpeed = baseMoveSpeed;
+  private generatedAppearance = false;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, assetKeys.soldierIdle);
@@ -78,24 +81,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (attackStarted) {
       this.attackEndsAt = time + attackDuration;
       body.setVelocityX(0);
-      this.play(assetKeys.soldierAttackAnimation, true);
+      this.playPlayerAnimation(assetKeys.soldierAttackAnimation);
     }
 
     if (isAttacking || attackStarted) {
       body.setVelocityX(0);
     } else if (movingLeft) {
-      body.setVelocityX(-moveSpeed);
+      body.setVelocityX(-this.moveSpeed);
       this.facingDirection = -1;
       this.setFlipX(true);
-      this.play(assetKeys.soldierWalkAnimation, true);
+      this.playPlayerAnimation(assetKeys.soldierWalkAnimation);
     } else if (movingRight) {
-      body.setVelocityX(moveSpeed);
+      body.setVelocityX(this.moveSpeed);
       this.facingDirection = 1;
       this.setFlipX(false);
-      this.play(assetKeys.soldierWalkAnimation, true);
+      this.playPlayerAnimation(assetKeys.soldierWalkAnimation);
     } else {
       body.setVelocityX(0);
-      this.play(assetKeys.soldierIdleAnimation, true);
+      this.playPlayerAnimation(assetKeys.soldierIdleAnimation);
     }
 
     const jumpHeld = (this.cursors.up?.isDown ?? false) || this.spaceKey.isDown;
@@ -192,6 +195,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.airDashAvailable = true;
   }
 
+  public enableSwiftRun(): void {
+    this.moveSpeed = swiftRunSpeed;
+  }
+
+  public useGeneratedAppearance(textureKey: string): boolean {
+    if (!this.scene.textures.exists(textureKey)) {
+      return false;
+    }
+    this.generatedAppearance = true;
+    this.stop();
+    this.setTexture(textureKey);
+    this.setDisplaySize(48, 48);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const bodyWidth = 18 / Math.abs(this.scaleX);
+    const bodyHeight = 30 / Math.abs(this.scaleY);
+    body.setSize(bodyWidth, bodyHeight);
+    body.setOffset(
+      (this.frame.realWidth - bodyWidth) / 2,
+      (this.frame.realHeight - bodyHeight) / 2,
+    );
+    return true;
+  }
+
   public setRespawnPoint(x: number, y: number): void {
     this.spawnPoint.set(x, y);
   }
@@ -204,5 +230,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpsUsed = 0;
     this.airDashAvailable = this.airDashEnabled;
     this.clearTint();
+  }
+
+  private playPlayerAnimation(key: string): void {
+    if (!this.generatedAppearance) {
+      this.play(key, true);
+    }
   }
 }

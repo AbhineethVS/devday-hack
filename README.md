@@ -34,25 +34,29 @@ This template has no application code or required technology stack. The document
 - **Project name:** Wishbound
 - **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and makes the second level a playable consequence.
 - **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** Opening wish → handcrafted 16-screen Grassland route → Wishing Gate → personalized Flight or Fire route → portal.
+- **Working demo:** Opening wish → handcrafted Grassland route → Wishing Gate → AI-authored outdoor adventure → one dungeon portal → bounded wave or giant-orc encounter → unlocked exit.
 - **Technology stack:** Vite, TypeScript, Phaser, and a small server-side OpenAI Responses API integration.
 
 ### Run the project
 
 1. Prerequisites: Node.js 24 or later and npm.
 2. Install dependencies: `npm install`
-3. Optional AI interpretation and live map generation: copy `.env.example` to an untracked `.env`, set `OPENAI_API_KEY`, then run `npm run server` in one terminal.
+3. Optional AI interpretation, adventure generation, and Level 2 hero image:
+   copy `.env.example` to an untracked `.env`, set `OPENAI_API_KEY`, then run
+   `npm run server` in one terminal. `OPENAI_MAP_MODEL` and
+   `OPENAI_IMAGE_MODEL` can override the defaults.
 4. Start the local game in another terminal: `npm run dev`
-5. Create a production build: `npm run build`
+5. Validate both generated encounter branches: `npm test`
+6. Create a production build: `npm run build`
 
 To test the live model without the offline fallback, set `VITE_REQUIRE_AI=true` in `.env` and restart `npm run dev`. The opening dialog will wait for a valid server response and show an error instead of starting Level 1 if the API is unavailable. Reset it to `false` for the resilient demo flow.
 
 ### Current status
 
-- Working features: A wish dialog opens before Level 1, then a 5,888 px handcrafted Grassland crosses seven distinct areas: Starting Meadow, Broken Grassland, Elevated Canopy, Great Ravine, Overgrown Crossing, Sunken Waterway, and Final Ascent. While the player traverses it, the server gives OpenAI the project-owned map-design skill and asks for a unique, strictly structured parkour map. The server verifies its asset names, 16 px alignment, terrain bounds, every mandatory jump, prop support, checkpoints, spawn, and goal; the browser validates it again before retaining it. Flight grants double jump and Fire grants air dash in the generated consequence map.
-- Demo walkthrough: Refresh the game and submit a wish. Watch the status change from “a new path is forming” to the generated map name while playing Level 1. Follow the lower route or harder elevated paths, cross the animated waterway, climb the final cliffs, and enter the Wishing Gate. The generated map then loads with its own terrain, scenery, checkpoints, title, world width, and portal. Press `R` after completion to replay that same generated map.
-- Known limitations: The model may select only Flight or Fire, and generated maps currently use the `parkour` mode and Grassland asset allowlist. Multiplayer map data and networking are not implemented yet. If map generation is late, unavailable, or invalid, the Wishing Gate immediately loads the original tested three-screen consequence route. `VITE_REQUIRE_AI=true` still requires live wish interpretation before Level 1 starts. The server must be deployed behind the game for a production build. Audio and credits screen are not implemented.
-- OpenAI implementation: The local server uses [Responses API Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses) for both wish interpretation and map generation. Runtime instructions live in `server/skills/map-designer/`; the model returns data only and never supplies executable code, asset paths, URLs, or physics values.
+- Working features: While the player crosses the handcrafted opening Grassland, OpenAI authors one version 2 adventure containing a wish-specific avatar description, one bounded mechanic preset, a decorated outdoor route, and one nested dungeon. A separate image request creates a transparent pixel-art hero that precisely reflects the wish (for example, a mounted/merged horse hero or a soldier with a jetpack); the generated image controls appearance only. The strict server contract checks the design seed, mechanic allowlist, grid, bounds, reachable ordered jumps, scenery support, checkpoints, dungeon arena, hazards, and encounter caps; the browser independently validates the same rules. Outdoor maps reuse the full Grassland renderer. The dungeon uses the Raou semantic atlas catalogue, animated torches, fixed collision, locked exit, and either 2–3 capped orc waves or one engine-configured giant orc boss.
+- Demo walkthrough: Submit a wish, traverse Level 1 while the status reports generation, and enter the Wishing Gate. Cross the generated outdoor route and use its sole portal. In the generated dungeon, enter the arena and defeat every wave enemy or the giant boss; the grey exit portal unlocks only after the encounter clears. Enter it to fulfil the wish, then press `R` to replay the same adventure.
+- Known limitations: The initial interpreter still maps wishes to Flight or Fire for fallback presentation. Generated adventures independently select only `swiftRun`, `doubleJump`, or `airDash`; image output can be more visually specific than those three safe mechanics. If adventure generation is unavailable or rejected, the Wishing Gate loads the original tested route. If only image generation fails, the generated adventure remains playable with the animated Soldier as an explicit fallback. Image generation is cached in server and browser memory, not persisted across server/browser restarts. Multiplayer, audio, persistence, and an in-game credits screen are not implemented. The Phaser bundle still produces Vite’s large-chunk warning.
+- OpenAI implementation: The local server uses [Responses API Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses) for wish interpretation and a single combined avatar-description + outdoor + dungeon request, then uses the Images API for appearance only. Runtime instructions live in `server/skills/map-designer/`; generated data cannot supply executable code, paths, raw atlas frames, or numeric gameplay parameters.
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Execution order: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)

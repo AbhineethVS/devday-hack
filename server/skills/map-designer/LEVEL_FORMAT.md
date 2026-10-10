@@ -1,21 +1,23 @@
-# GeneratedLevel version 1
+# GeneratedAdventure version 2
 
-The live game supports one ordered mandatory route. Terrain strips are rendered
-with the verified Grassland 47-tile atlas and rectangular Arcade bodies.
-One-tile-high strips collide from above only.
+The live game supports one generated outdoor route linked to one generated
+dungeon. Phaser owns collision, movement, combat, health, wave timing, boss
+stats, portal locking, and rendering. Model output is placement and composition
+data only.
 
-## Fields
+## Root fields
 
-- `version`: Always `1`.
-- `mode`: Always `"parkour"`.
-- `name`: Short atmospheric map name, maximum 28 characters.
+- `version`: Always `2`.
+- `mode`: Always `"adventure"`.
+- `name`: Short atmospheric adventure name, maximum 28 characters.
 - `designSeed`: Copy the supplied design seed exactly.
-- `worldWidth`: One of 1472, 1840, 2208, 2576, or 2944.
-- `spawn`: Player start. Put it safely inside the first strip.
-- `goal`: Portal position and the surface Y of the final strip.
-- `terrain`: Mandatory landing strips ordered by increasing X.
-- `props`: Non-collidable scenery placed on terrain surfaces.
-- `checkpoints`: Invisible respawn triggers placed on broad safe strips.
+- `avatar.appearancePrompt`: A concise visual description that applies the
+  player's exact wish to one side-view soldier silhouette. It is sent to the
+  image model; do not include a background, text, UI, controls, or mechanics.
+- `avatar.mechanic`: Exactly one engine preset: `swiftRun`, `doubleJump`, or
+  `airDash`. Appearance never controls gameplay values.
+- `outdoor`: One Grassland route with exactly one dungeon portal.
+- `dungeon`: One nested dungeon with either waves or one boss.
 
 ## Terrain strip
 
@@ -34,47 +36,47 @@ For ground or cliffs, extend `heightInTiles` to the 208 px world bottom:
 Terrain must not overlap horizontally. The gap is measured from the right edge
 of one strip to the X coordinate of the next strip.
 
-## Prop placement
+Both `outdoor.spawn` and `dungeon.spawn` must be on the first strip with
+`y = surfaceY - 56`. Checkpoint `spawnY` must be `surfaceY - 40`.
 
-Allowed kinds:
+## Outdoor
+
+- `worldWidth`: 1472, 1840, 2208, 2576, or 2944.
+- `terrain`: 8–18 ordered safe strips.
+- `bridges`: wooden top-only bridge strips, 4–16 tiles wide.
+- `water`: animated waterways at `y: 176`, 3–16 tiles wide.
+- `backgroundPatches`: non-colliding soil panels.
+- `props`: supported static scenery. Allowed kinds:
 
 `tree`, `bush`, `stoneSmall`, `stoneMedium`, `stoneLarge`,
 `tallGrassOne`, `tallGrassTwo`, `flowerOne`, `flowerTwo`,
-`flowerThree`, `grassUp`, `choppedTree`, and `loneTrunk`.
+`flowerThree`, `grassUp`, `choppedTree`, `loneTrunk`, `trunkLeft`,
+`trunkCenterOne`, `trunkCenterTwo`, and `trunkRight`.
 
 The prop Y value must equal the surface Y of the supporting terrain strip.
 
-## Checkpoints
+- `clouds`, `butterflies`, and `bubbles`: non-colliding ambience.
+- `orcs`: each patrol must stay on its supporting terrain strip. Enemy behavior
+  and stats are fixed by the engine.
+- `portal`: supported near the final 384 px of the map.
 
-`triggerX` must be inside a terrain strip. `spawnX` must be inside the same
-strip and `spawnY` should normally be `surfaceY - 40`.
+## Dungeon
 
-## Example shape
+- `worldWidth`: 1472, 1840, or 2208.
+- `terrain`: 5–14 ordered safe strips.
+- `decorations`: semantic names only: `arch`, `door`, `window`, `shelf`,
+  `table`, `grave`, `statue`, `bars`, `crate`, `banner`, `bones`, `pillar`,
+  and `rubble`.
+- `torches`: animated wall accents using 16 px aligned positions.
+- `hazards`: supported spike runs, 1–4 tiles each.
+- `encounter.arena`: continuous terrain at least 320 px wide.
+- `encounter.spawnPoints`: 2–6 supported points inside the arena.
+- For `type: "wave"`, set `boss` to `null` and provide 2–3 waves. Each wave's
+  `spawnPointIndexes` length must equal `count`.
+- For `type: "boss"`, set `waves` to `[]` and provide one short boss title and
+  a boss position inside the arena.
+- `exit`: supported terrain after the arena. It begins locked and unlocks only
+  after the engine confirms that all encounter enemies are defeated.
 
-```json
-{
-  "version": 1,
-  "mode": "parkour",
-  "name": "Windcut Steps",
-  "designSeed": "copy-the-requested-seed",
-  "worldWidth": 1472,
-  "spawn": { "x": 64, "y": 120 },
-  "goal": { "x": 1408, "surfaceY": 144 },
-  "terrain": [
-    { "x": 0, "y": 176, "widthInTiles": 14, "heightInTiles": 2 },
-    { "x": 272, "y": 160, "widthInTiles": 6, "heightInTiles": 3 },
-    { "x": 416, "y": 144, "widthInTiles": 7, "heightInTiles": 4 },
-    { "x": 576, "y": 176, "widthInTiles": 12, "heightInTiles": 2 },
-    { "x": 816, "y": 160, "widthInTiles": 8, "heightInTiles": 3 },
-    { "x": 976, "y": 128, "widthInTiles": 8, "heightInTiles": 5 },
-    { "x": 1152, "y": 144, "widthInTiles": 20, "heightInTiles": 4 }
-  ],
-  "props": [
-    { "kind": "tree", "x": 144, "y": 176, "flipX": false },
-    { "kind": "flowerOne", "x": 448, "y": 144, "flipX": false }
-  ],
-  "checkpoints": [
-    { "triggerX": 624, "spawnX": 640, "spawnY": 136 }
-  ]
-}
-```
+The JSON schema supplied with the request is authoritative for every field and
+array bound.

@@ -4,6 +4,24 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T05:18:00+05:30 — Prepare single-service Render deploy
+
+- Changed: Added `npm run start`, production static file serving from `dist/`,
+  SPA fallback routing, and Render-friendly host binding. The Node server now
+  serves both `/api/*` and the built Vite game from one web service.
+- Changed: Documented Render Web Service setup, build/start commands, Node
+  version, and required OpenAI environment variables in `README.md`.
+- Why: Make the project deployable as one Render service without exposing
+  `OPENAI_API_KEY` to the browser or splitting the API onto another host.
+- Affected: `server/index.mjs`, `package.json`, `README.md`, `CHANGELOG.md`,
+  and `AI_USAGE.md`.
+- Validation: `npm test`, `npm run build`, and `node --check server/index.mjs`
+  passed. A local production smoke server returned HTTP 200 for `/` and a built
+  CSS asset. An initial smoke attempt on port 3002 failed because the local port
+  was already in use; retry on port 3102 passed.
+- Limitations: Render environment variables still need to be configured in the
+  Render dashboard before live AI generation will work.
+
 ## 2026-10-11T05:11:00+05:30 — Expand wish-specific power presets
 
 - Changed: Added three new generated-avatar mechanics: `slowFall` for

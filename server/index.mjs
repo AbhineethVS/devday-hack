@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   generatedDungeonSchema,
   generatedOutdoorSchema,
@@ -10,6 +12,11 @@ import {
 } from "./adventure-contract.mjs";
 
 const port = Number(process.env.PORT ?? 3001);
+const host = process.env.HOST ?? (process.env.RENDER ? "0.0.0.0" : "127.0.0.1");
+const distDirectory = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../dist",
+);
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_MODEL ?? "gpt-6-astra";
 const mapModel = process.env.OPENAI_MAP_MODEL ?? model;
@@ -43,6 +50,16 @@ const mapLevelFormat = await readFile(
   new URL("./skills/map-designer/LEVEL_FORMAT.md", import.meta.url),
   "utf8",
 );
+
+const contentTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+};
 
 const generatedLevelSchema = {
   type: "object",
@@ -678,9 +695,56 @@ function extractOutputText(payload) {
   return chunks.length > 0 ? chunks.join("") : null;
 }
 
+async function serveStatic(request, response) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return false;
+  }
+
+  const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+  if (requestUrl.pathname.startsWith("/api/")) {
+    return false;
+  }
+
+  const normalizedPath = path.normalize(decodeURIComponent(requestUrl.pathname));
+  const relativePath = normalizedPath === path.sep
+    ? "index.html"
+    : normalizedPath.replace(/^[/\\]+/, "");
+  const candidatePath = path.resolve(distDirectory, relativePath);
+  const safePath = candidatePath.startsWith(distDirectory)
+    ? candidatePath
+    : path.join(distDirectory, "index.html");
+
+  try {
+    const fileBuffer = await readFile(safePath);
+    response.writeHead(200, {
+      "Content-Type": contentTypes[path.extname(safePath)] ?? "application/octet-stream",
+    });
+    if (request.method === "HEAD") {
+      response.end();
+    } else {
+      response.end(fileBuffer);
+    }
+    return true;
+  } catch {
+    try {
+      const fallback = await readFile(path.join(distDirectory, "index.html"));
+      response.writeHead(200, { "Content-Type": contentTypes[".html"] });
+      response.end(request.method === "HEAD" ? undefined : fallback);
+    } catch {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Build output not found. Run npm run build first.");
+    }
+    return true;
+  }
+}
+
 const server = createServer(async (request, response) => {
   if (request.method === "OPTIONS") {
     sendJson(response, 204, {});
+    return;
+  }
+
+  if (await serveStatic(request, response)) {
     return;
   }
 
@@ -755,6 +819,6 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Wish and map server listening on http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`Wish and map server listening on http://${host}:${port}`);
 });

@@ -48,8 +48,30 @@ This template has no application code or required technology stack. The document
 4. Start the local game in another terminal: `npm run dev`
 5. Validate both generated encounter branches: `npm test`
 6. Create a production build: `npm run build`
+7. Serve the production build and API together: `npm run start`
 
 To test the live model without the offline fallback, set `VITE_REQUIRE_AI=true` in `.env` and restart `npm run dev`. The opening dialog will wait for a valid server response and show an error instead of starting Level 1 if the API is unavailable. Reset it to `false` for the resilient demo flow.
+
+### Deploy on Render
+
+Use a single Render **Web Service** so the Node API and built Vite game share
+one origin.
+
+1. Push this repository to GitHub.
+2. In Render, create a new Web Service from the repository.
+3. Runtime: Node.
+4. Build command: `npm install && npm run build`
+5. Start command: `npm run start`
+6. Environment variables:
+   - `OPENAI_API_KEY`: your server-only OpenAI key
+   - `OPENAI_MODEL`: `gpt-6-astra` or the available text model you want
+   - `OPENAI_MAP_MODEL`: same as above, or a model reserved for maps
+   - `OPENAI_IMAGE_MODEL`: `gpt-image-1`
+   - `NODE_VERSION`: `24`
+
+Render provides `PORT` and the server binds to `0.0.0.0` automatically there.
+Do not set `VITE_REQUIRE_AI=true` for the public demo unless you want Level 1
+to block when the API is unavailable.
 
 ### Current status
 

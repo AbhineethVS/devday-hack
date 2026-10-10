@@ -9,6 +9,15 @@ const maximumCharge = 5;
 const attackDuration = 260;
 const invulnerabilityDuration = 900;
 
+export const gameplayKeyCodes = [
+  Phaser.Input.Keyboard.KeyCodes.LEFT,
+  Phaser.Input.Keyboard.KeyCodes.RIGHT,
+  Phaser.Input.Keyboard.KeyCodes.UP,
+  Phaser.Input.Keyboard.KeyCodes.SPACE,
+  Phaser.Input.Keyboard.KeyCodes.X,
+  Phaser.Input.Keyboard.KeyCodes.F,
+];
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly spaceKey: Phaser.Input.Keyboard.Key;
@@ -41,14 +50,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.attackKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     this.healKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-    scene.input.keyboard.addCapture([
-      Phaser.Input.Keyboard.KeyCodes.LEFT,
-      Phaser.Input.Keyboard.KeyCodes.RIGHT,
-      Phaser.Input.Keyboard.KeyCodes.UP,
-      Phaser.Input.Keyboard.KeyCodes.SPACE,
-      Phaser.Input.Keyboard.KeyCodes.X,
-      Phaser.Input.Keyboard.KeyCodes.F,
-    ]);
+    scene.input.keyboard.addCapture(gameplayKeyCodes);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     // The sheet has transparent padding. This collision box tracks the

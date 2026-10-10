@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { assetKeys, assetPaths } from "../assets";
 import { gameHeight, gameWidth } from "../dimensions";
 import { Orc } from "../entities/Orc";
-import { Player } from "../entities/Player";
+import { gameplayKeyCodes, Player } from "../entities/Player";
 
 const worldWidth = gameWidth * 3;
 const tileSize = 16;
@@ -330,6 +330,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.physics.pause();
+    this.input.keyboard?.removeCapture(gameplayKeyCodes);
     this.statusText?.setText("The shrine listens.");
     this.wishDialog = this.add
       .dom(gameWidth / 2, gameHeight / 2)
@@ -380,6 +381,7 @@ export class BootScene extends Phaser.Scene {
         dialog.destroy();
         this.wishDialog = undefined;
         this.isWishTransitioning = false;
+        this.input.keyboard?.addCapture(gameplayKeyCodes);
         this.scene.restart({ flight: true });
       },
     });

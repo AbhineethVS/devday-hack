@@ -4,6 +4,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T01:10:45+05:30 — Fix wish-field keyboard ownership
+
+- Changed: Removed gameplay key captures while the shrine dialog is open and restored them only after its closing transition. The paused scene continues to ignore player updates, so typing—including spaces, `F`, and movement keys—only edits the wish field.
+- Why: The game-level key capture was preventing normal text entry in the HTML input.
+- Affected: `src/game/entities/Player.ts` and `src/game/scenes/BootScene.ts`.
+- Validation: `npm run build` passed.
+- Limitations: The dialog currently has no cancel action; submitting it always starts the hardcoded Flight route.
+
 ## 2026-10-11T01:02:54+05:30 — Fix controls and animate wish dialog
 
 - Changed: Captured gameplay keys so the browser does not claim Space, arrows, `X`, or `F`; changed `F` to spend one earned charge for one health rather than silently requiring a full five-charge meter; and added smooth scale/fade-in and scale/fade-out animations around the shrine wish dialog.

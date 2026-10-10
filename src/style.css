@@ -1,0 +1,29 @@
+:root {
+  background: #071627;
+  color: #f3f7f0;
+  font-family: system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+}
+
+#app {
+  width: min(100vw, 1104px);
+  padding: 16px;
+}
+
+#app canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}

@@ -34,20 +34,22 @@ This template has no application code or required technology stack. The document
 - **Project name:** Wishbound
 - **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and makes the second level a playable consequence.
 - **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** Not built yet. The first demo route is Grassland path → shrine → Flight consequence → portal.
-- **Technology stack:** Planned: Vite, TypeScript, Phaser, and a small Node API added after the local gameplay loop is complete.
+- **Working demo:** Milestone 1 render shell; the first complete demo route will be Grassland path → shrine → Flight consequence → portal.
+- **Technology stack:** Vite, TypeScript, and Phaser. A small Node API is planned only after the local gameplay loop is complete.
 
 ### Run the project
 
-Replace these placeholders with commands that actually work for your project:
-
-The application scaffold has not been created yet. Setup, run, and verification commands will be recorded here once they exist.
+1. Prerequisites: Node.js 24 or later and npm.
+2. Install dependencies: `npm install`
+3. Start the local game: `npm run dev`
+4. Create a production build: `npm run build`
 
 ### Current status
 
-- Working features: Runtime-ready Grassland, Soldier, and Orc asset files are organised under `public/assets`.
-- Known limitations: No runnable game client, portal source file, or AI integration yet. Only the Soldier and Orc are available from the free character download.
+- Working features: Milestone 1 client shell loads a Grassland background and the Soldier idle animation at a fixed pixel-art resolution.
+- Known limitations: No movement, collision, route, shrine, portal source file, or AI integration yet. Only the Soldier and Orc are available from the free character download.
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Execution order: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Asset sources and attribution: [docs/ASSETS.md](docs/ASSETS.md)
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.

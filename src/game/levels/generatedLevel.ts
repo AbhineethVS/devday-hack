@@ -13,6 +13,7 @@ const propKinds = new Set<GeneratedPropKind>([
   "flowerThree", "grassUp", "choppedTree", "loneTrunk",
   "trunkLeft", "trunkCenterOne", "trunkCenterTwo", "trunkRight",
 ]);
+const minimumArenaWidth = 192;
 const cloudKinds = new Set<GeneratedCloudKind>(["small", "medium", "large"]);
 const dungeonDecorationKinds = new Set<DungeonDecorationKind>([
   "arch", "door", "window", "shelf", "table", "grave", "statue",
@@ -21,7 +22,13 @@ const dungeonDecorationKinds = new Set<DungeonDecorationKind>([
 
 export type GeneratedPropKind = LevelOnePropKind;
 export type GeneratedCloudKind = "small" | "medium" | "large";
-export type GeneratedAvatarMechanic = "swiftRun" | "doubleJump" | "airDash";
+export type GeneratedAvatarMechanic =
+  | "swiftRun"
+  | "doubleJump"
+  | "airDash"
+  | "slowFall"
+  | "tank"
+  | "powerHit";
 export type DungeonDecorationKind =
   | "arch" | "door" | "window" | "shelf" | "table" | "grave"
   | "statue" | "bars" | "crate" | "banner" | "bones" | "pillar"
@@ -442,7 +449,7 @@ function validateEncounter(
     !isRecord(value) || (value.type !== "wave" && value.type !== "boss") ||
     !isRecord(value.arena) || !isGridAligned(value.arena.left) ||
     !isGridAligned(value.arena.right) || !surfaceYs.has(value.arena.surfaceY as number) ||
-    (value.arena.right as number) - (value.arena.left as number) < 320 ||
+    (value.arena.right as number) - (value.arena.left as number) < minimumArenaWidth ||
     (value.arena.left as number) < 256 || (value.arena.right as number) > worldWidth - 192
   ) return null;
   const arena = value.arena as unknown as DungeonArena;
@@ -503,7 +510,7 @@ export function validateGeneratedAdventure(value: unknown): GeneratedAdventure |
     typeof value.avatar.appearancePrompt !== "string" ||
     value.avatar.appearancePrompt.trim().length < 8 ||
     value.avatar.appearancePrompt.length > 240 ||
-    !new Set(["swiftRun", "doubleJump", "airDash"]).has(
+    !new Set(["swiftRun", "doubleJump", "airDash", "slowFall", "tank", "powerHit"]).has(
       value.avatar.mechanic as string,
     )
   ) return null;

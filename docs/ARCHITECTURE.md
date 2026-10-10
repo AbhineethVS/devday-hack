@@ -98,9 +98,10 @@ server/
   seed-specific texture key. `Player` displays it at 48 x 48 logical pixels
   with nearest-neighbour rendering and a fixed engine-owned collision body.
   Animation switching is disabled for this static generated appearance.
-- The avatar contract permits only `swiftRun` (156 px/s), `doubleJump`, or
-  `airDash`. Code applies those presets; image pixels, image prompts, and model
-  text cannot alter speed values, collision, damage, health, or physics.
+- The avatar contract permits only bounded code-owned presets: `swiftRun`
+  (156 px/s), `doubleJump`, `airDash`, `slowFall`, `tank`, and `powerHit`.
+  Code applies those presets; image pixels, image prompts, and model text
+  cannot alter raw speed values, collision, damage, health, or physics.
 - If the image request fails validation, times out, or is unavailable, the
   generated adventure uses the existing Soldier sprite and remains playable.
 - Dungeon model data chooses composition and encounter branch only. Phaser owns

@@ -66,12 +66,12 @@ export class Orc extends Phaser.Physics.Arcade.Sprite {
     this.setFlipX(this.direction < 0);
   }
 
-  public takeHit(time: number): boolean {
+  public takeHit(time: number, damage = 1): boolean {
     if (this.defeated || time < this.hitRecoveryEndsAt) {
       return false;
     }
 
-    this.health -= 1;
+    this.health -= Math.max(1, Math.floor(damage));
     this.hitRecoveryEndsAt = time + hitRecoveryDuration;
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocityX(0);

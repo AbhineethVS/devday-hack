@@ -10,6 +10,7 @@ const maximumCharge = 5;
 const attackDuration = 260;
 const invulnerabilityDuration = 900;
 const airDashVelocity = 245;
+const slowFallVelocity = 88;
 
 export const gameplayKeyCodes = [
   Phaser.Input.Keyboard.KeyCodes.LEFT,
@@ -37,6 +38,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private doubleJumpEnabled = false;
   private airDashEnabled = false;
   private airDashAvailable = false;
+  private slowFallEnabled = false;
+  private tankEnabled = false;
+  private powerHitEnabled = false;
+  private armorBufferReady = true;
   private jumpsUsed = 0;
   private moveSpeed = baseMoveSpeed;
   private generatedAppearance = false;
@@ -124,6 +129,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.airDashAvailable = false;
     }
 
+    if (this.slowFallEnabled && jumpHeld && body.velocity.y > slowFallVelocity) {
+      body.setVelocityY(slowFallVelocity);
+    }
+
     if (this.wasJumpHeld && !jumpHeld && body.velocity.y < 0) {
       body.setVelocityY(Math.max(body.velocity.y * 0.5, -shortHopVelocity));
     }
@@ -142,6 +151,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public getCharge(): number {
     return this.charge;
+  }
+
+  public getAttackDamage(): number {
+    return this.powerHitEnabled ? 2 : 1;
   }
 
   public addCharge(): boolean {
@@ -168,13 +181,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return false;
     }
 
-    this.health -= 1;
+    const damageBlocked = this.tankEnabled && this.armorBufferReady;
+    if (damageBlocked) {
+      this.armorBufferReady = false;
+    } else {
+      this.health -= 1;
+      this.armorBufferReady = true;
+    }
     this.invulnerableEndsAt = time + invulnerabilityDuration;
-    this.setTint(0xff9ba7);
+    this.setTint(damageBlocked ? 0xa9d8ff : 0xff9ba7);
     this.scene.time.delayedCall(invulnerabilityDuration, () => this.clearTint());
 
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setVelocity(knockbackDirection * 150, -120);
+    body.setVelocity(
+      knockbackDirection * (this.tankEnabled ? 80 : 150),
+      this.tankEnabled ? -70 : -120,
+    );
     return true;
   }
 
@@ -197,6 +219,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public enableSwiftRun(): void {
     this.moveSpeed = swiftRunSpeed;
+  }
+
+  public enableSlowFall(): void {
+    this.slowFallEnabled = true;
+  }
+
+  public enableTank(): void {
+    this.tankEnabled = true;
+  }
+
+  public enablePowerHit(): void {
+    this.powerHitEnabled = true;
   }
 
   public useGeneratedAppearance(textureKey: string): boolean {
@@ -229,6 +263,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.wasJumpHeld = false;
     this.jumpsUsed = 0;
     this.airDashAvailable = this.airDashEnabled;
+    this.armorBufferReady = true;
     this.clearTint();
   }
 

@@ -1277,6 +1277,9 @@ export class BootScene extends Phaser.Scene {
     const mechanic = this.levelTwoMap?.avatar.mechanic;
     if (mechanic === "swiftRun") return "Wish form: swift run";
     if (mechanic === "airDash") return "C air dash";
+    if (mechanic === "slowFall") return "Hold jump to slow fall";
+    if (mechanic === "tank") return "Armor absorbs hits";
+    if (mechanic === "powerHit") return "Heavy attacks";
     return "Double jump";
   }
 
@@ -1288,6 +1291,12 @@ export class BootScene extends Phaser.Scene {
       player.enableDoubleJump();
     } else if (mechanic === "airDash") {
       player.enableAirDash();
+    } else if (mechanic === "slowFall") {
+      player.enableSlowFall();
+    } else if (mechanic === "tank") {
+      player.enableTank();
+    } else if (mechanic === "powerHit") {
+      player.enablePowerHit();
     }
     if (this.levelTwoAvatarImage) {
       player.useGeneratedAppearance(this.generatedAvatarTextureKey());
@@ -1689,11 +1698,15 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
+    const healthBefore = this.player.getHealth();
     this.updateHealthBar();
     this.shakeHealthBar();
 
     if (this.player.getHealth() <= 0) {
       this.respawnPlayer("You were defeated — health restored.");
+    } else if (this.player.getHealth() === healthBefore) {
+      this.statusText?.setText("Armor absorbed the hit.");
+      this.time.delayedCall(900, () => this.statusText?.setText(""));
     } else {
       this.statusText?.setText("Ouch! One health bar lost.");
       this.time.delayedCall(900, () => this.statusText?.setText(""));
@@ -1720,11 +1733,13 @@ export class BootScene extends Phaser.Scene {
       return isInFacingDirection && isWithinReach && isAtSimilarHeight;
     });
 
-    if (target?.takeHit(time)) {
+    if (target?.takeHit(time, this.player.getAttackDamage())) {
       const charged = this.player.addCharge();
       this.updateChargeBar();
       const message = target.isDefeated()
         ? "Orc defeated!"
+        : this.player.getAttackDamage() > 1
+          ? "Heavy hit!"
         : charged
           ? "Hit! Charge gained."
           : "Hit! Charge is full — press F to heal.";

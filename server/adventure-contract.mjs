@@ -58,7 +58,7 @@ export const generatedAdventureSchema = {
         appearancePrompt: { type: "string", minLength: 8, maxLength: 240 },
         mechanic: {
           type: "string",
-          enum: ["swiftRun", "doubleJump", "airDash"],
+          enum: ["swiftRun", "doubleJump", "airDash", "slowFall", "tank", "powerHit"],
         },
       },
       required: ["appearancePrompt", "mechanic"],
@@ -646,7 +646,7 @@ export function validateGeneratedOutdoor(candidate, expectedSeed) {
     typeof candidate.avatar.appearancePrompt === "string" &&
     candidate.avatar.appearancePrompt.trim().length >= 8 &&
     candidate.avatar.appearancePrompt.length <= 240 &&
-    ["swiftRun", "doubleJump", "airDash"].includes(candidate.avatar.mechanic),
+    ["swiftRun", "doubleJump", "airDash", "slowFall", "tank", "powerHit"].includes(candidate.avatar.mechanic),
     "Model returned an invalid generated adventure.",
   );
   return {

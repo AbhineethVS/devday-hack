@@ -15,8 +15,9 @@ and rendering. Model output is placement and composition data only.
 - `avatar.appearancePrompt`: A concise visual description that applies the
   player's exact wish to one side-view soldier silhouette. It is sent to the
   image model; do not include a background, text, UI, controls, or mechanics.
-- `avatar.mechanic`: Exactly one engine preset: `swiftRun`, `doubleJump`, or
-  `airDash`. Appearance never controls gameplay values.
+- `avatar.mechanic`: Exactly one engine preset: `swiftRun`, `doubleJump`,
+  `airDash`, `slowFall`, `tank`, or `powerHit`. Appearance never controls
+  gameplay values.
 - `outdoor`: One Grassland route with exactly one dungeon portal.
 - `dungeon`: One nested dungeon with either waves or one boss.
 

@@ -4,6 +4,28 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T05:11:00+05:30 — Expand wish-specific power presets
+
+- Changed: Added three new generated-avatar mechanics: `slowFall` for
+  parachutes/gliders/umbrellas, `tank` for armor/shields/giants/robots, and
+  `powerHit` for dragons/swords/strength wishes. `swiftRun`, `doubleJump`,
+  and `airDash` remain available for cars/mounts, wings, and jetpacks.
+- Changed: Updated server/browser allowlists, map-designer guidance, HUD hints,
+  player mechanics, Orc damage handling, and contract tests for the expanded
+  preset set.
+- Why: Make the generated wish image affect gameplay more naturally while
+  keeping all physics, damage, and combat values hardcoded and safe.
+- Affected: `src/game/entities/Player.ts`, `src/game/entities/Orc.ts`,
+  `src/game/scenes/BootScene.ts`, `src/game/levels/generatedLevel.ts`,
+  `server/adventure-contract.mjs`, `server/adventure-contract.test.mjs`,
+  `server/skills/map-designer/`, `README.md`, `docs/ARCHITECTURE.md`,
+  `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm test` passed nine contract tests, `npm run build` passed
+  with the existing Phaser chunk warning, and IDE diagnostics found no errors
+  in the edited gameplay/schema files.
+- Limitations: The AI still chooses from fixed presets only; wishes outside
+  these categories are creatively mapped to the nearest safe mechanic.
+
 ## 2026-10-11T05:00:00+05:30 — Make wish avatars apply reliably
 
 - Changed: Level 2 and dungeon scenes now retry the wish-avatar request and

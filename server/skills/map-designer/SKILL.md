@@ -19,9 +19,14 @@ Return only the fields in the supplied schema for the requested task.
    on one recognizable side-view hero. For example, a horse wish should visibly
    merge or mount the soldier with a horse; a jetpack wish should visibly equip
    a jetpack. Do not ask for backgrounds, text, multiple characters, or UI.
-5. Select only one bounded avatar mechanic: `swiftRun` for mounts/speed wishes,
-   `airDash` for jetpacks/thrust/dashes, or `doubleJump` for wings/flight/leaps.
-   This is a preset ID only; never output movement values.
+5. Select only one bounded avatar mechanic. Use `swiftRun` for mounts, cars,
+   supercars, speed, skates, or racing wishes; `slowFall` for parachutes,
+   umbrellas, gliders, balloons, or floating descent; `airDash` for jetpacks,
+   rockets, boosters, thrust, or dash wishes; `doubleJump` for wings, birds,
+   angels, flight, or leaping wishes; `tank` for armor, shields, giants,
+   robots, stone bodies, or toughness wishes; and `powerHit` for dragons,
+   swords, claws, fists, thunder, or strength wishes. This is a preset ID only;
+   never output movement values.
 6. Never output source code, asset paths, URLs, frame numbers, damage, health,
    speed values, physics values, or scripts.
 7. Keep each terrain array ordered left to right. Each strip is the next

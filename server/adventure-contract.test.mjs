@@ -130,6 +130,18 @@ test("accepts the giant boss branch", () => {
   assert.equal(result.avatar.mechanic, "airDash");
 });
 
+test("accepts expanded wish power presets", () => {
+  for (const mechanic of ["slowFall", "tank", "powerHit"]) {
+    const adventure = makeAdventure("wave");
+    adventure.avatar = {
+      appearancePrompt: `The soldier clearly embodies the ${mechanic} wish as one side-view hero`,
+      mechanic,
+    };
+    const result = validateGeneratedAdventure(adventure, seed);
+    assert.equal(result.avatar.mechanic, mechanic);
+  }
+});
+
 test("validates independently generated outdoor and dungeon halves", () => {
   const adventure = makeAdventure("wave");
   const outdoor = validateGeneratedOutdoor({

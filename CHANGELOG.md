@@ -4,6 +4,19 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T07:20:00+05:30 — Polish README with screenshots
+
+- Changed: Replaced the long README with a short project-focused version,
+  added app screenshots under `docs/screenshots/`, and kept only essential
+  controls, run, deploy, tech, safety, and documentation links.
+- Why: Make the repo easier for judges and teammates to scan quickly.
+- Affected: `README.md`, `docs/screenshots/`, `CHANGELOG.md`, and
+  `AI_USAGE.md`.
+- Validation: `git diff --check` passed. Confirmed both screenshots are present
+  in `docs/screenshots/`.
+- Limitations: Screenshots show the local production build; live AI output still
+  depends on configured OpenAI credentials.
+
 ## 2026-10-11T05:29:00+05:30 — Finalize submission documentation
 
 - Changed: Rewrote `README.md` as a project-focused overview, completed

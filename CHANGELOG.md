@@ -4,6 +4,21 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T05:29:00+05:30 — Finalize submission documentation
+
+- Changed: Rewrote `README.md` as a project-focused overview, completed
+  `SUBMISSION.md`, refreshed `docs/IMPLEMENTATION_PLAN.md` with the final
+  implemented scope, and noted production static serving in
+  `docs/ARCHITECTURE.md`.
+- Why: Prepare the repository for organizer submission and public demo review.
+- Affected: `README.md`, `SUBMISSION.md`, `docs/IMPLEMENTATION_PLAN.md`,
+  `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm test` passed nine contract tests, `npm run build` passed
+  with the existing Phaser chunk warning, and a placeholder scan found only the
+  intentional final-SHA marker before commit/amend.
+- Limitations: The Render public URL is still pending until the service is
+  created in the Render dashboard; `SUBMISSION.md` records local demo steps.
+
 ## 2026-10-11T05:18:00+05:30 — Prepare single-service Render deploy
 
 - Changed: Added `npm run start`, production static file serving from `dist/`,

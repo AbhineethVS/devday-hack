@@ -118,6 +118,9 @@ server/
   `/api/outdoor` and `/api/dungeon` return separately validated map halves.
   The combined `/api/level` route remains for compatibility. No endpoint
   returns executable instructions.
+- In production, the same Node server also serves the built Vite files from
+  `dist/` and falls back to `index.html` for browser routes. This keeps Render
+  deployment to one Web Service and keeps OpenAI credentials server-side.
 
 ## Asset conventions
 

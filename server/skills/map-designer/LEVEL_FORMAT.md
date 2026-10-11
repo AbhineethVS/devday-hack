@@ -74,8 +74,8 @@ The prop Y value must equal the surface Y of the supporting terrain strip.
 - `encounter.arena`: continuous terrain, preferably at least 320 px wide.
   The validator may normalize safe smaller arenas onto supported terrain.
 - `encounter.spawnPoints`: 2–6 supported points inside the arena.
-- For `type: "wave"`, set `boss` to `null` and provide 2–3 waves. Each wave's
-  `spawnPointIndexes` length must equal `count`.
+- For `type: "wave"`, set `boss` to `null` and provide 2–3 waves of 4–14 orcs
+  each (40 total max). Each wave's `spawnPointIndexes` length must equal `count`.
 - For `type: "boss"`, set `waves` to `[]` and provide one short boss title and
   a boss position inside the arena.
 - `exit`: supported terrain after the arena. It begins locked and unlocks only

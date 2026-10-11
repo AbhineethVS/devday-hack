@@ -57,6 +57,7 @@ export const assetKeys = {
   dungeonAtlas: "dungeon-atlas",
   dungeonTorch: "dungeon-torch",
   dungeonTorchAnimation: "dungeon-torch-animation",
+  bgm: "wishbound-theme",
 } as const;
 
 export const assetPaths = {
@@ -112,4 +113,5 @@ export const assetPaths = {
   orcDeath: "/assets/characters/enemies/orc/death.png",
   dungeonAtlas: "/assets/world/dungeon/Tilesetv3.png",
   dungeonTorch: "/assets/world/dungeon/spr_torch.png",
+  bgm: "/assets/audio/wishbound-theme.mp3",
 } as const;

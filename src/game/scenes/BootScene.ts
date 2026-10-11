@@ -44,6 +44,9 @@ const levelTwoWorldWidth = gameWidth * 3;
 const tileSize = 16;
 const groundTop = gameHeight - tileSize * 2;
 const requireRemoteWishPlan = import.meta.env.VITE_REQUIRE_AI === "true";
+const outdoorOrcPackSize = 3;
+const dungeonWavePackSize = 3;
+const bossAddPackSize = 6;
 
 const propAssetKeys: Record<LevelOnePropKind, string> = {
   tree: assetKeys.grasslandTree,
@@ -246,6 +249,7 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 21,
       frameHeight: 27,
     });
+    this.load.audio(assetKeys.bgm, assetPaths.bgm);
     if (this.levelTwoMap && this.levelTwoAvatarImage) {
       this.load.image(this.generatedAvatarTextureKey(), this.levelTwoAvatarImage);
     }
@@ -418,6 +422,7 @@ export class BootScene extends Phaser.Scene {
     this.registerDungeonAtlasFrames();
 
     if (this.levelTwoPlan) {
+      this.ensureBackgroundMusic();
       this.createWishLevel(this.levelTwoPlan);
       return;
     }
@@ -515,7 +520,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.createCheckpoints();
-    this.orcs = levelOneOrcs.map(
+    this.orcs = this.expandPatrolOrcs(levelOneOrcs, outdoorOrcPackSize).map(
       ({ x, y, patrolLeft, patrolRight }) =>
         new Orc(this, x, y, patrolLeft, patrolRight),
     );
@@ -816,6 +821,7 @@ export class BootScene extends Phaser.Scene {
 
     const dialog = this.controlsDialog;
     this.controlsDialog = undefined;
+    this.ensureBackgroundMusic();
     this.tweens.add({
       targets: dialog,
       alpha: 0,
@@ -827,6 +833,41 @@ export class BootScene extends Phaser.Scene {
         this.openWishDialog();
       },
     });
+  }
+
+  private ensureBackgroundMusic(): void {
+    if (!this.cache.audio.exists(assetKeys.bgm)) {
+      return;
+    }
+
+    const existing = this.sound.get(assetKeys.bgm);
+    if (existing) {
+      if (!existing.isPlaying) {
+        existing.play();
+      }
+      return;
+    }
+
+    this.sound.play(assetKeys.bgm, { loop: true, volume: 0.38 });
+  }
+
+  private expandPatrolOrcs<T extends { x: number; y: number; patrolLeft: number; patrolRight: number }>(
+    placements: T[],
+    packSize: number,
+  ): T[] {
+    const expanded: T[] = [];
+    for (const placement of placements) {
+      const span = Math.max(16, placement.patrolRight - placement.patrolLeft - 16);
+      for (let index = 0; index < packSize; index += 1) {
+        const ratio = packSize === 1 ? 0.5 : index / (packSize - 1);
+        const x = Math.round((placement.patrolLeft + 8 + span * ratio) / 16) * 16;
+        expanded.push({
+          ...placement,
+          x: Math.min(Math.max(x, placement.patrolLeft + 8), placement.patrolRight - 8),
+        });
+      }
+    }
+    return expanded;
   }
 
   private openWishDialog(): void {
@@ -844,7 +885,7 @@ export class BootScene extends Phaser.Scene {
           <label for="wish-input">THE SHRINE LISTENS</label>
           <p>What do you wish for?</p>
           <p id="wish-status" aria-live="polite"></p>
-          <input id="wish-input" name="wish" maxlength="120" autocomplete="off" placeholder="I wish I could fly" />
+          <input id="wish-input" name="wish" maxlength="120" autocomplete="off" placeholder="supercar" />
           <button type="submit">MAKE WISH</button>
         </form>
       `)
@@ -1184,7 +1225,7 @@ export class BootScene extends Phaser.Scene {
       "outdoor",
     );
 
-    this.orcs = outdoor.orcs.map(
+    this.orcs = this.expandPatrolOrcs(outdoor.orcs, outdoorOrcPackSize).map(
       ({ x, y, patrolLeft, patrolRight }) =>
         new Orc(this, x, y, patrolLeft, patrolRight),
     );
@@ -1585,6 +1626,22 @@ export class BootScene extends Phaser.Scene {
     });
 
     if (encounter.type === "boss") {
+      const adds = encounter.spawnPoints
+        .slice(0, bossAddPackSize)
+        .flatMap((spawn, index) => {
+          const copies = Math.ceil(bossAddPackSize / Math.max(1, encounter.spawnPoints.length));
+          return Array.from({ length: copies }, (_, copy) => {
+            const jitter = ((index + copy) % 5 - 2) * 14;
+            return new Orc(
+              this,
+              spawn.x + jitter,
+              spawn.y,
+              encounter.arena.left + 16,
+              encounter.arena.right - 16,
+            );
+          });
+        })
+        .slice(0, bossAddPackSize);
       this.orcs = [
         new Orc(
           this,
@@ -1594,10 +1651,11 @@ export class BootScene extends Phaser.Scene {
           encounter.arena.right - 24,
           "boss",
         ),
+        ...adds,
       ];
       this.orcs.forEach((orc) => this.connectOrc(orc));
       this.createBossHealthBar(encounter.boss.title);
-      this.statusText?.setText(`${encounter.boss.title} blocks the exit!`);
+      this.statusText?.setText(`${encounter.boss.title} and a mob block the exit!`);
     } else {
       this.spawnDungeonWave(0);
     }
@@ -1610,11 +1668,16 @@ export class BootScene extends Phaser.Scene {
     this.orcs.forEach((orc) => orc.destroy());
     const wave = encounter.waves[index];
     this.currentWaveIndex = index;
-    this.orcs = wave.spawnPointIndexes.map((spawnIndex) => {
+    const spawnIndexes = Array.from(
+      { length: dungeonWavePackSize },
+      () => wave.spawnPointIndexes,
+    ).flat();
+    this.orcs = spawnIndexes.map((spawnIndex, spawnOrder) => {
       const spawn = encounter.spawnPoints[spawnIndex];
+      const jitter = ((spawnOrder % 5) - 2) * 12;
       return new Orc(
         this,
-        spawn.x,
+        spawn.x + jitter,
         spawn.y,
         encounter.arena.left + 16,
         encounter.arena.right - 16,
@@ -1623,7 +1686,7 @@ export class BootScene extends Phaser.Scene {
     });
     this.orcs.forEach((orc) => this.connectOrc(orc));
     this.statusText?.setText(
-      `Orc wave ${index + 1}/${encounter.waves.length} · ${wave.count} attackers`,
+      `Orc wave ${index + 1}/${encounter.waves.length} · ${this.orcs.length} attackers`,
     );
   }
 

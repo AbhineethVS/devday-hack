@@ -332,7 +332,7 @@ function validateOutdoor(value: unknown): OutdoorMap | null {
   const bubbles = validateAmbient(value.bubbles, worldWidth, "disappearing");
   if (!butterflies || !bubbles) return null;
 
-  if (!Array.isArray(value.orcs) || value.orcs.length < 1 || value.orcs.length > 6) return null;
+  if (!Array.isArray(value.orcs) || value.orcs.length < 4 || value.orcs.length > 18) return null;
   const orcs: GeneratedOrc[] = [];
   for (const item of value.orcs) {
     if (
@@ -458,7 +458,7 @@ function validateEncounter(
       strip.y === arena.surfaceY && arena.left >= strip.x + 16 &&
       arena.right <= strip.x + strip.widthInTiles * 16 - 16,
   );
-  if (!arenaSupport || !Array.isArray(value.spawnPoints) || value.spawnPoints.length < 2 || value.spawnPoints.length > 6) return null;
+  if (!arenaSupport || !Array.isArray(value.spawnPoints) || value.spawnPoints.length < 2 || value.spawnPoints.length > 8) return null;
   const spawnPoints: Array<{ x: number; y: number }> = [];
   for (const item of value.spawnPoints) {
     if (
@@ -475,15 +475,15 @@ function validateEncounter(
     let total = 0;
     for (const item of value.waves) {
       if (
-        !isRecord(item) || !Number.isInteger(item.count) || (item.count as number) < 3 ||
-        (item.count as number) > 6 || !Array.isArray(item.spawnPointIndexes) ||
+        !isRecord(item) || !Number.isInteger(item.count) || (item.count as number) < 4 ||
+        (item.count as number) > 14 || !Array.isArray(item.spawnPointIndexes) ||
         item.spawnPointIndexes.length !== item.count ||
         item.spawnPointIndexes.some((index) => !Number.isInteger(index) || index < 0 || index >= spawnPoints.length)
       ) return null;
       total += item.count as number;
       waves.push({ count: item.count as number, spawnPointIndexes: [...item.spawnPointIndexes] as number[] });
     }
-    if (total > 15) return null;
+    if (total > 40) return null;
     return { type: "wave", arena, spawnPoints, waves, boss: null };
   }
 

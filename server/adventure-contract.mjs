@@ -178,8 +178,8 @@ export const generatedAdventureSchema = {
         },
         orcs: {
           type: "array",
-          minItems: 1,
-          maxItems: 6,
+          minItems: 4,
+          maxItems: 18,
           items: {
             type: "object",
             properties: {
@@ -263,19 +263,19 @@ export const generatedAdventureSchema = {
               required: ["left", "right", "surfaceY"],
               additionalProperties: false,
             },
-            spawnPoints: { type: "array", minItems: 2, maxItems: 6, items: point },
+            spawnPoints: { type: "array", minItems: 2, maxItems: 8, items: point },
             waves: {
               type: "array",
               maxItems: 3,
               items: {
                 type: "object",
                 properties: {
-                  count: { type: "integer", minimum: 3, maximum: 6 },
+                  count: { type: "integer", minimum: 4, maximum: 14 },
                   spawnPointIndexes: {
                     type: "array",
-                    minItems: 3,
-                    maxItems: 6,
-                    items: { type: "integer", minimum: 0, maximum: 5 },
+                    minItems: 4,
+                    maxItems: 14,
+                    items: { type: "integer", minimum: 0, maximum: 7 },
                   },
                 },
                 required: ["count", "spawnPointIndexes"],
@@ -462,7 +462,7 @@ function validateOutdoor(candidate) {
   const butterflies = ambient(candidate.butterflies, "flipX", 12);
   const bubbles = ambient(candidate.bubbles, "disappearing", 12);
 
-  check(inRange(candidate.orcs, 1, 6), "Outdoor orcs are invalid.");
+  check(inRange(candidate.orcs, 4, 18), "Outdoor orcs are invalid.");
   const orcs = candidate.orcs.map((item, index) => {
     check(isObject(item) && aligned(item.x), `Outdoor orc ${index} is invalid.`);
     const strip = support(terrain, item.x);
@@ -539,7 +539,7 @@ function validateEncounter(candidate, terrain, worldWidth) {
     arena.right - arena.left >= minimumArenaWidth,
     "Dungeon arena is invalid.",
   );
-  check(inRange(candidate.spawnPoints, 2, 6), "Dungeon spawn points are invalid.");
+  check(inRange(candidate.spawnPoints, 2, 8), "Dungeon spawn points are invalid.");
   const spawnPoints = candidate.spawnPoints.map((item, index) => {
     check(isObject(item), `Dungeon spawn point ${index} is invalid.`);
     const fallbackX = arena.left + 32 +
@@ -555,11 +555,11 @@ function validateEncounter(candidate, terrain, worldWidth) {
     check(candidate.boss === null && inRange(candidate.waves, 2, 3), "Wave encounter shape is invalid.");
     let total = 0;
     const waves = candidate.waves.map((item, index) => {
-      check(isObject(item) && Number.isInteger(item.count) && item.count >= 3 && item.count <= 6 && Array.isArray(item.spawnPointIndexes) && item.spawnPointIndexes.length === item.count && item.spawnPointIndexes.every((spawnIndex) => Number.isInteger(spawnIndex) && spawnIndex >= 0 && spawnIndex < spawnPoints.length), `Dungeon wave ${index} is invalid.`);
+      check(isObject(item) && Number.isInteger(item.count) && item.count >= 4 && item.count <= 14 && Array.isArray(item.spawnPointIndexes) && item.spawnPointIndexes.length === item.count && item.spawnPointIndexes.every((spawnIndex) => Number.isInteger(spawnIndex) && spawnIndex >= 0 && spawnIndex < spawnPoints.length), `Dungeon wave ${index} is invalid.`);
       total += item.count;
       return { count: item.count, spawnPointIndexes: [...item.spawnPointIndexes] };
     });
-    check(total <= 15, "Dungeon wave encounter exceeds the enemy cap.");
+    check(total <= 40, "Dungeon wave encounter exceeds the enemy cap.");
     return { type: "wave", arena: { ...arena }, spawnPoints, waves, boss: null };
   }
 

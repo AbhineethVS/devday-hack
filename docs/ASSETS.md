@@ -49,6 +49,15 @@ Level 1 runtime use:
   users must obtain redistribution/use rights from Raou and should not extract
   or redistribute them separately.
 
+### Background music
+
+- File: `public/assets/audio/wishbound-theme.mp3`
+- Source filename supplied for the hackathon build:
+  `kontraa-mario-kart-electro-pop-music-126781.mp3`
+- Runtime use: looping menu/game BGM started after the controls card continues
+  (browser autoplay unlock).
+- Credit the track artist (Kontraa) in any public credits presentation.
+
 ## Deliberately not imported
 
 ### Raven Fantasy Icons

@@ -238,9 +238,24 @@ export const levelOneClouds: CloudPlacement[] = [
 ];
 
 export const levelOneOrcs: OrcPlacement[] = [
+  { x: 520, y: 120, patrolLeft: 480, patrolRight: 600 },
+  { x: 720, y: 120, patrolLeft: 680, patrolRight: 800 },
+  { x: 980, y: 120, patrolLeft: 920, patrolRight: 1080 },
+  { x: 1180, y: 120, patrolLeft: 1120, patrolRight: 1260 },
   { x: 1384, y: 120, patrolLeft: 1336, patrolRight: 1496 },
+  { x: 1580, y: 120, patrolLeft: 1520, patrolRight: 1680 },
+  { x: 1980, y: 120, patrolLeft: 1920, patrolRight: 2080 },
+  { x: 2280, y: 120, patrolLeft: 2220, patrolRight: 2380 },
+  { x: 2680, y: 120, patrolLeft: 2620, patrolRight: 2780 },
+  { x: 3080, y: 120, patrolLeft: 3020, patrolRight: 3180 },
   { x: 3488, y: 120, patrolLeft: 3436, patrolRight: 3564 },
+  { x: 3680, y: 120, patrolLeft: 3620, patrolRight: 3780 },
+  { x: 4080, y: 120, patrolLeft: 4020, patrolRight: 4180 },
+  { x: 4480, y: 120, patrolLeft: 4420, patrolRight: 4580 },
+  { x: 4880, y: 120, patrolLeft: 4820, patrolRight: 4980 },
   { x: 5128, y: 120, patrolLeft: 5080, patrolRight: 5184 },
+  { x: 5320, y: 120, patrolLeft: 5260, patrolRight: 5420 },
+  { x: 5560, y: 120, patrolLeft: 5500, patrolRight: 5660 },
 ];
 
 export const levelOneCheckpoints: CheckpointPlacement[] = [

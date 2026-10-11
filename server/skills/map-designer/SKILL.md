@@ -63,7 +63,7 @@ Use these conservative mandatory limits:
 ## Composition
 
 - Outdoor: 8–18 terrain strips, 8–36 supported props, 1–3 bridges,
-  1–3 waterways, 1–6 patrol orcs, 1–4 checkpoints, and one supported portal.
+  1–3 waterways, 4–18 patrol orcs, 1–4 checkpoints, and one supported portal.
 - Dungeon: 5–14 terrain strips, 8–36 decorations, 2–12 torches, up to eight
   short spike hazards, 1–4 checkpoints, one arena, and one exit.
 - Use landings at least 64 px wide and include broad rest strips.
@@ -79,7 +79,7 @@ Use these conservative mandatory limits:
 - Prefer one continuous supported arena at least 320 px wide. The engine can
   normalize smaller broad strips when needed, but never split an arena across
   gaps. Keep spawn points at least 32 px inside it.
-- Wave encounters use 2–3 rounds of 3–6 orcs, no more than 15 total.
+- Wave encounters use 2–3 rounds of 4–14 orcs, no more than 40 total.
 - Boss encounters use one boss object and an empty waves array.
 - Put the dungeon exit on supported terrain after the arena.
 

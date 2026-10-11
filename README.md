@@ -21,6 +21,7 @@ Wishbound is a small pixel-art platformer made for DevDay Exchange Community Hac
 - AI chooses a safe power preset, such as fast run, double jump, air dash, slow fall, armor, or heavy attack.
 - AI generates one transparent pixel-art hero image for the wish-built stages.
 - The exit portal unlocks only after the encounter is cleared.
+- Looping electro-pop BGM starts after you continue past the controls card.
 
 ## Controls
 

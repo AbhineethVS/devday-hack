@@ -4,6 +4,23 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T07:43:11+05:30 — Add BGM and denser orc spawns
+
+- Changed: Imported looping theme music, started it after the controls card,
+  packed Level 1/outdoor patrols denser, tripled dungeon wave packs, added boss
+  adds, and raised AI outdoor/wave enemy limits.
+- Why: User supplied a track and asked for much higher mob density on every
+  stage before pushing.
+- Affected: `public/assets/audio/`, `src/game/assets.ts`,
+  `src/game/scenes/BootScene.ts`, `src/game/levels/levelOne.ts`,
+  `src/game/levels/generatedLevel.ts`, `server/adventure-contract.mjs`,
+  contract tests/skills, README/submission/assets docs, `CHANGELOG.md`, and
+  `AI_USAGE.md`.
+- Validation: `npm test` passed nine contract tests; `npm run build` passed with
+  the existing Phaser chunk-size warning.
+- Limitations: Music starts only after Continue (browser autoplay). Some Level 1
+  patrols may sit on narrow ledges depending on exact terrain supports.
+
 ## 2026-10-11T07:32:00+05:30 — Controls card and live demo URL
 
 - Changed: Added a pre-game controls card before the wish dialog, linked the

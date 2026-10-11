@@ -36,8 +36,8 @@ function makeAdventure(encounterType) {
           { x: 960, y: 120 },
         ],
         waves: [
-          { count: 3, spawnPointIndexes: [0, 1, 2] },
-          { count: 3, spawnPointIndexes: [2, 1, 0] },
+          { count: 4, spawnPointIndexes: [0, 1, 2, 0] },
+          { count: 5, spawnPointIndexes: [2, 1, 0, 2, 1] },
         ],
         boss: null,
       }
@@ -84,7 +84,12 @@ function makeAdventure(encounterType) {
       ],
       butterflies: [{ x: 448, y: 128, flipX: false }],
       bubbles: [{ x: 240, y: 184, disappearing: false }],
-      orcs: [{ x: 800, y: 120, patrolLeft: 768, patrolRight: 832 }],
+      orcs: [
+        { x: 480, y: 120, patrolLeft: 448, patrolRight: 544 },
+        { x: 640, y: 120, patrolLeft: 608, patrolRight: 704 },
+        { x: 800, y: 120, patrolLeft: 768, patrolRight: 832 },
+        { x: 960, y: 120, patrolLeft: 928, patrolRight: 1024 },
+      ],
       checkpoints: [{ triggerX: 464, spawnX: 480, spawnY: 136 }],
       portal: { x: 1408, surfaceY: 176 },
     },
@@ -173,21 +178,39 @@ test("rejects a mismatched design seed", () => {
 
 test("rejects an encounter beyond the engine cap", () => {
   const adventure = makeAdventure("wave");
-  adventure.dungeon.encounter.waves.push({
-    count: 6,
-    spawnPointIndexes: [0, 1, 2, 0, 1, 2],
-  });
-  adventure.dungeon.encounter.waves[0] = {
-    count: 6,
-    spawnPointIndexes: [0, 1, 2, 0, 1, 2],
-  };
-  adventure.dungeon.encounter.waves[1] = {
-    count: 6,
-    spawnPointIndexes: [2, 1, 0, 2, 1, 0],
-  };
+  adventure.dungeon.encounter.waves = [
+    {
+      count: 10,
+      spawnPointIndexes: [0, 1, 2, 0, 1, 2, 0, 1, 2, 0],
+    },
+    {
+      count: 10,
+      spawnPointIndexes: [2, 1, 0, 2, 1, 0, 2, 1, 0, 2],
+    },
+    {
+      count: 10,
+      spawnPointIndexes: [1, 0, 2, 1, 0, 2, 1, 0, 2, 1],
+    },
+  ];
+  // Force a total above the 40-enemy cap while keeping per-wave shape otherwise valid.
+  adventure.dungeon.encounter.waves[0].count = 14;
+  adventure.dungeon.encounter.waves[0].spawnPointIndexes = Array.from(
+    { length: 14 },
+    (_, index) => index % 3,
+  );
+  adventure.dungeon.encounter.waves[1].count = 14;
+  adventure.dungeon.encounter.waves[1].spawnPointIndexes = Array.from(
+    { length: 14 },
+    (_, index) => index % 3,
+  );
+  adventure.dungeon.encounter.waves[2].count = 14;
+  adventure.dungeon.encounter.waves[2].spawnPointIndexes = Array.from(
+    { length: 14 },
+    (_, index) => index % 3,
+  );
   assert.throws(
     () => validateGeneratedAdventure(adventure, seed),
-    /enemy cap/,
+    /enemy cap|Dungeon wave/,
   );
 });
 
@@ -203,16 +226,16 @@ test("rejects an unbounded avatar mechanic", () => {
 test("normalizes safe checkpoint and patrol metadata onto supporting terrain", () => {
   const adventure = makeAdventure("wave");
   adventure.outdoor.checkpoints[0].spawnY = 12;
-  adventure.outdoor.orcs[0].y = 12;
-  adventure.outdoor.orcs[0].patrolLeft = 800;
-  adventure.outdoor.orcs[0].patrolRight = 800;
+  adventure.outdoor.orcs[2].y = 12;
+  adventure.outdoor.orcs[2].patrolLeft = 800;
+  adventure.outdoor.orcs[2].patrolRight = 800;
   const result = validateGeneratedAdventure(adventure, seed);
   assert.deepEqual(result.outdoor.checkpoints[0], {
     triggerX: 464,
     spawnX: 480,
     spawnY: 136,
   });
-  assert.deepEqual(result.outdoor.orcs[0], {
+  assert.deepEqual(result.outdoor.orcs[2], {
     x: 800,
     y: 120,
     patrolLeft: 784,

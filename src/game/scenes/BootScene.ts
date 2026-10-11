@@ -248,7 +248,8 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 21,
       frameHeight: 27,
     });
-    this.load.audio(assetKeys.bgm, assetPaths.bgm);
+    // BGM is loaded lazily after Continue — the 5MB track blocked startup with a
+    // plain navy screen while Phaser preload waited on the download.
     if (this.levelTwoMap && this.levelTwoAvatarImage) {
       this.load.image(this.generatedAvatarTextureKey(), this.levelTwoAvatarImage);
     }
@@ -835,10 +836,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   private ensureBackgroundMusic(): void {
-    if (!this.cache.audio.exists(assetKeys.bgm)) {
-      return;
-    }
-
     const existing = this.sound.get(assetKeys.bgm);
     if (existing) {
       if (!existing.isPlaying) {
@@ -847,7 +844,23 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
-    this.sound.play(assetKeys.bgm, { loop: true, volume: 0.38 });
+    if (this.cache.audio.exists(assetKeys.bgm)) {
+      this.sound.play(assetKeys.bgm, { loop: true, volume: 0.38 });
+      return;
+    }
+
+    if (this.load.isLoading()) {
+      this.load.once(Phaser.Loader.Events.COMPLETE, () => this.ensureBackgroundMusic());
+      return;
+    }
+
+    this.load.audio(assetKeys.bgm, assetPaths.bgm);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      if (!this.sound.get(assetKeys.bgm) && this.cache.audio.exists(assetKeys.bgm)) {
+        this.sound.play(assetKeys.bgm, { loop: true, volume: 0.38 });
+      }
+    });
+    this.load.start();
   }
 
   private expandPatrolOrcs<T extends { x: number; y: number; patrolLeft: number; patrolRight: number }>(

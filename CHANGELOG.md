@@ -4,6 +4,17 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T08:52:00+05:30 — Fix navy blank screen on startup
+
+- Changed: Stopped preloading the 5.4 MB theme MP3 during BootScene startup and
+  load it lazily after the controls card Continue action instead.
+- Why: Production spent several seconds on Phaser's navy `#071627` background
+  while the music file downloaded (~15s on Render), which looked like a blank
+  blue crash screen.
+- Affected: `src/game/scenes/BootScene.ts`, `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm run build` run in the same change set.
+- Limitations: Music may start a moment after Continue while the track streams.
+
 ## 2026-10-11T08:25:00+05:30 — Stop production AI-unavailable hard fail
 
 - Changed: Wish interpretation now retries, uses a 25s timeout, falls back to a

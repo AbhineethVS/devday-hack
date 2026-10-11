@@ -23,7 +23,7 @@ Participate solo or in a team of up to 4. Remove unused rows.
 
 - **Prerequisites and versions:** Node.js 24 or later, npm, a modern desktop browser, and an OpenAI API key for live AI features.
 - **Install command:** `npm install`
-- **Required environment variable names:** `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAP_MODEL`, `OPENAI_IMAGE_MODEL`, `PORT`, and optional `VITE_REQUIRE_AI`. See [.env.example](.env.example); do not commit real secrets.
+- **Required environment variable names:** `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAP_MODEL`, `OPENAI_IMAGE_MODEL`, and `PORT`. See [.env.example](.env.example); do not commit real secrets. Do not set `VITE_REQUIRE_AI` on Render.
 - **Start command:** Local development uses `npm run server` and `npm run dev` in separate terminals. Production/Render uses `npm run start` after `npm run build`.
 - **Demo walkthrough:** Open the live demo or local app, read the controls card, then type a wish at the shrine dialog. Traverse the Grassland to the Wishing Gate while OpenAI builds both following levels from scratch. Enter the gate, play the AI-authored outdoor route with the wish-specific hero/power, use the dungeon entrance portal into the AI-authored dungeon, defeat either capped Orc waves or the giant Orc boss, then enter the unlocked exit portal.
 - **Checks performed and results:** `npm test` passed nine contract tests; `npm run build` passed with the existing Phaser chunk-size warning; `node --check server/index.mjs` passed; IDE diagnostics reported no relevant errors; local production smoke returned HTTP 200 for `/` and a built CSS asset; live avatar smoke returned HTTP 200 for a car-style wish during development.

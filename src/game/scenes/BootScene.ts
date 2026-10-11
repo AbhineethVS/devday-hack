@@ -43,7 +43,6 @@ import type { WishPlan } from "../../wishes/types";
 const levelTwoWorldWidth = gameWidth * 3;
 const tileSize = 16;
 const groundTop = gameHeight - tileSize * 2;
-const requireRemoteWishPlan = import.meta.env.VITE_REQUIRE_AI === "true";
 const outdoorOrcPackSize = 2;
 const dungeonWavePackSize = 2;
 const bossAddPackSize = 3;
@@ -917,16 +916,11 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.isWishTransitioning = true;
-    if (requireRemoteWishPlan) {
-      this.setWishDialogStatus("Shaping your wish…", true);
-      this.requestRemoteWishPlan(wishText, true);
-      return;
-    }
-
+    this.setWishDialogStatus("Shaping your wish…", true);
+    // Always ask the server first. Local fallback keeps the game playable if
+    // the live interpreter is slow or briefly unavailable in production.
     this.preparedWishPlan = interpretLocal(wishText);
-    this.requestGeneratedLevel(wishText, this.preparedWishPlan);
-    this.requestRemoteWishPlan(wishText, false);
-    this.closeWishDialog();
+    this.requestRemoteWishPlan(wishText, true);
   }
 
   private closeWishDialog(): void {
@@ -965,7 +959,7 @@ export class BootScene extends Phaser.Scene {
 
         if (!plan) {
           if (isRequired) {
-            this.handleRemoteWishFailure();
+            this.finishWishWithFallback(wishText);
           }
           return;
         }
@@ -987,9 +981,18 @@ export class BootScene extends Phaser.Scene {
       })
       .catch(() => {
         if (isRequired) {
-          this.handleRemoteWishFailure();
+          this.finishWishWithFallback(wishText);
         }
       });
+  }
+
+  private finishWishWithFallback(wishText: string): void {
+    this.preparedWishPlan = this.preparedWishPlan ?? interpretLocal(wishText);
+    this.requestGeneratedLevel(wishText, this.preparedWishPlan);
+    this.closeWishDialog();
+    this.statusText?.setText(
+      `${this.preparedWishPlan.title} ready — live AI was busy, using a safe plan.`,
+    );
   }
 
   private requestGeneratedLevel(wishText: string, plan: WishPlan): void {
@@ -1053,11 +1056,6 @@ export class BootScene extends Phaser.Scene {
         this.statusText?.setText(`${plan.title} ready — the proven path awaits.`);
       }
     });
-  }
-
-  private handleRemoteWishFailure(): void {
-    this.isWishTransitioning = false;
-    this.setWishDialogStatus("AI unavailable — check server and key, then try again.", false);
   }
 
   private setWishDialogStatus(message: string, disableSubmit: boolean): void {

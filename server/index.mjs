@@ -444,7 +444,24 @@ function validateModelPlan(candidate) {
   };
 }
 
-async function createWishPlan(wish) {
+function createLocalWishPlan(wish) {
+  const fireWords = /\b(fire|flame|burn|ember|heat|blaze|inferno)\b/i;
+  if (fireWords.test(wish)) {
+    return {
+      id: "fire",
+      title: "Ember Trail",
+      narration: "Heat sharpens your dash. Leave a burning streak through every leap.",
+    };
+  }
+
+  return {
+    id: "flight",
+    title: "Skyward Bound",
+    narration: "The wind lifts you above the platforms. Every leap becomes a chance to soar.",
+  };
+}
+
+async function requestWishPlanFromModel(wish) {
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
@@ -465,7 +482,7 @@ async function createWishPlan(wish) {
         },
         { role: "user", content: wish },
       ],
-      max_output_tokens: 180,
+      max_output_tokens: 220,
       store: false,
       text: {
         format: {
@@ -485,7 +502,7 @@ async function createWishPlan(wish) {
         },
       },
     }),
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(25_000),
   });
 
   if (!response.ok) {
@@ -499,6 +516,27 @@ async function createWishPlan(wish) {
   }
 
   return validateModelPlan(JSON.parse(outputText));
+}
+
+async function createWishPlan(wish) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await requestWishPlanFromModel(wish);
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `Wish interpretation attempt ${attempt + 1} failed:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
+  console.error(
+    "Wish interpretation falling back to local plan:",
+    lastError instanceof Error ? lastError.message : lastError,
+  );
+  return createLocalWishPlan(wish);
 }
 
 async function requestGeneratedPart({
@@ -686,13 +724,26 @@ function extractOutputText(payload) {
   const chunks = [];
   for (const item of Array.isArray(payload?.output) ? payload.output : []) {
     for (const part of Array.isArray(item?.content) ? item.content : []) {
-      if (part?.type === "output_text" && typeof part.text === "string" && part.text.trim().length > 0) {
+      if (
+        (part?.type === "output_text" || part?.type === "text") &&
+        typeof part.text === "string" &&
+        part.text.trim().length > 0
+      ) {
         chunks.push(part.text);
       }
     }
   }
 
-  return chunks.length > 0 ? chunks.join("") : null;
+  if (chunks.length > 0) {
+    return chunks.join("");
+  }
+
+  // Some Responses payloads nest JSON under message content without output_text.
+  if (typeof payload?.text === "string" && payload.text.trim().length > 0) {
+    return payload.text;
+  }
+
+  return null;
 }
 
 async function serveStatic(request, response) {

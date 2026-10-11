@@ -4,6 +4,21 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T08:25:00+05:30 — Stop production AI-unavailable hard fail
+
+- Changed: Wish interpretation now retries, uses a 25s timeout, falls back to a
+  local plan on the server, and the client always continues with a safe plan
+  instead of blocking on "AI unavailable". Removed the hard `VITE_REQUIRE_AI`
+  gate from gameplay.
+- Why: Production `/api/wish` intermittently returned 502 while the baked
+  require-AI client treated that as a hard stop even when maps/keys were fine.
+- Affected: `server/index.mjs`, `src/game/scenes/BootScene.ts`, `.env.example`,
+  `SUBMISSION.md`, `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm test` passed nine contract tests; `npm run build` and
+  `node --check server/index.mjs` passed.
+- Limitations: Map/avatar generation can still fall back independently if those
+  endpoints fail; only the wish hard-block is removed.
+
 ## 2026-10-11T07:55:00+05:30 — Fix false dungeon hazard respawns
 
 - Changed: Disabled lethal dungeon floor-spike hazards (wrong rocky atlas frame

@@ -38,8 +38,10 @@ Level 1 runtime use:
 - Source dimensions: the main atlas is 272 x 832 on a 16 x 16 tile grid; the
   animated torch strip is 84 x 27 with four 21 x 27 frames.
 - Runtime use: dungeon terrain, arches, doors, windows, shelves, furniture,
-  graves, statues, bars, spikes, props, and animated torches. Generated data
-  uses semantic names; `src/game/levels/dungeonAtlas.ts` owns source regions.
+  graves, statues, bars, props, and animated torches. Generated data uses
+  semantic names; `src/game/levels/dungeonAtlas.ts` owns source regions.
+  Floor-spike hazards are accepted in AI JSON but stripped at validation and
+  not rendered, because the mapped atlas frame looked like walkable rock.
 - Terms stated by Raou on the source page: purchasers may use and modify the
   tileset in any number of commercial or non-commercial projects, but may not
   redistribute the tileset itself in any way. Raou also states that credit is

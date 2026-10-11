@@ -44,9 +44,9 @@ const levelTwoWorldWidth = gameWidth * 3;
 const tileSize = 16;
 const groundTop = gameHeight - tileSize * 2;
 const requireRemoteWishPlan = import.meta.env.VITE_REQUIRE_AI === "true";
-const outdoorOrcPackSize = 3;
-const dungeonWavePackSize = 3;
-const bossAddPackSize = 6;
+const outdoorOrcPackSize = 2;
+const dungeonWavePackSize = 2;
+const bossAddPackSize = 3;
 
 const propAssetKeys: Record<LevelOnePropKind, string> = {
   tree: assetKeys.grasslandTree,
@@ -1296,26 +1296,8 @@ export class BootScene extends Phaser.Scene {
       "dungeon",
     );
 
-    dungeon.hazards.forEach((hazard) => {
-      for (let index = 0; index < hazard.widthInTiles; index += 1) {
-        this.add.image(
-          hazard.x + index * tileSize + tileSize / 2,
-          hazard.surfaceY - tileSize / 2,
-          assetKeys.dungeonAtlas,
-          "dungeon-spike",
-        ).setDepth(2);
-      }
-      const zone = this.add.zone(
-        hazard.x + (hazard.widthInTiles * tileSize) / 2,
-        hazard.surfaceY - 5,
-        hazard.widthInTiles * tileSize,
-        10,
-      );
-      this.physics.add.existing(zone, true);
-      this.physics.add.overlap(this.player!, zone, () =>
-        this.respawnPlayer("The dungeon spikes drive you back."),
-      );
-    });
+    // Floor "spike" hazards used a rocky atlas frame that looked like walkable
+    // dungeon blocks, so lethal overlaps are intentionally skipped.
 
     this.dungeonExitSprite = this.add
       .sprite(dungeon.exit.x, dungeon.exit.surfaceY, assetKeys.portal)

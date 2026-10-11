@@ -600,12 +600,12 @@ function validateDungeon(candidate) {
   });
 
   check(inRange(candidate.hazards, 0, 8), "Dungeon hazards are invalid.");
-  const hazards = candidate.hazards.map((item, index) => {
+  // Accept hazard metadata for schema compatibility, but drop it. The mapped
+  // spike frame reads as walkable dungeon rock and was falsely killing players.
+  candidate.hazards.forEach((item, index) => {
     check(isObject(item) && aligned(item.x) && surfaceYs.includes(item.surfaceY) && Number.isInteger(item.widthInTiles) && item.widthInTiles >= 1 && item.widthInTiles <= 4, `Dungeon hazard ${index} is invalid.`);
-    const strip = support(terrain, item.x, item.surfaceY);
-    check(strip && item.x + item.widthInTiles * 16 <= strip.x + strip.widthInTiles * 16, `Dungeon hazard ${index} is unsupported.`);
-    return { ...item };
   });
+  const hazards = [];
 
   const encounter = validateEncounter(candidate.encounter, terrain, worldWidth);
   check(isObject(candidate.exit), "Dungeon exit is invalid.");

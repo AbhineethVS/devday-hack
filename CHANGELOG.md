@@ -4,6 +4,21 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T07:55:00+05:30 — Fix false dungeon hazard respawns
+
+- Changed: Disabled lethal dungeon floor-spike hazards (wrong rocky atlas frame
+  looked walkable and sent players back to spawn), stripped hazards in adventure
+  validation, and reduced outdoor/dungeon/Level 1 orc pack density a bit.
+- Why: User hit dark dungeon floor blocks that falsely respawned them, and asked
+  for slightly fewer mobs.
+- Affected: `src/game/scenes/BootScene.ts`, `src/game/levels/levelOne.ts`,
+  `server/adventure-contract.mjs`, `docs/ASSETS.md`, `CHANGELOG.md`, and
+  `AI_USAGE.md`.
+- Validation: `npm test` passed nine contract tests; `npm run build` passed with
+  the existing Phaser chunk-size warning.
+- Limitations: Dungeon spike traps remain deferred until a clearly readable
+  spike frame is wired.
+
 ## 2026-10-11T07:43:11+05:30 — Add BGM and denser orc spawns
 
 - Changed: Imported looping theme music, started it after the controls card,

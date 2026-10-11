@@ -7,7 +7,7 @@ Use this file to submit Wishbound through the method announced by the organizers
 - **Project name:** Wishbound
 - **Short description:** A pixel-art platformer where a shrine interprets the player's written wish and turns the next stage into an AI-authored playable consequence. OpenAI structured outputs generate a validated outdoor route, dungeon, encounter branch, safe power preset, and wish-specific transparent hero image while Phaser keeps all gameplay rules hardcoded and safe.
 - **Code repository URL:** <https://github.com/AbhineethVS/devday-hack>
-- **Final submitted implementation commit SHA:** WILL_UPDATE_AFTER_FINAL_DOC_COMMIT
+- **Final submitted implementation commit SHA:** f21b3214abe564909c0bcc081a03c24cb7b757e3
 - **Working demo URL or local demo steps:** Render deployment is prepared but the public Render URL must be created in the Render dashboard. Local demo: run `npm install`, copy `.env.example` to `.env`, set `OPENAI_API_KEY`, run `npm run server`, run `npm run dev`, open the Vite URL, make a wish, clear Level 1, enter the Wishing Gate, find the dungeon portal, defeat the encounter, and enter the unlocked exit.
 - **Demo access requirements:** Node.js 24+, npm, keyboard controls, and an OpenAI API key for live AI generation. Without a key, the local fallback route remains playable but the AI-authored outdoor/dungeon and generated hero image are unavailable.
 

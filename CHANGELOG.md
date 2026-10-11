@@ -10,6 +10,8 @@ Record each meaningful project change during the event, newest first. Update thi
   `SUBMISSION.md`, refreshed `docs/IMPLEMENTATION_PLAN.md` with the final
   implemented scope, and noted production static serving in
   `docs/ARCHITECTURE.md`.
+- Changed: Recorded the submitted implementation commit SHA in `SUBMISSION.md`
+  in a follow-up documentation commit.
 - Why: Prepare the repository for organizer submission and public demo review.
 - Affected: `README.md`, `SUBMISSION.md`, `docs/IMPLEMENTATION_PLAN.md`,
   `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and `AI_USAGE.md`.

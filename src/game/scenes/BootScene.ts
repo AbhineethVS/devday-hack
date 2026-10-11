@@ -83,6 +83,7 @@ export class BootScene extends Phaser.Scene {
   private preparedAvatarResolved = true;
   private remoteWishRequestId = 0;
   private remoteLevelRequestId = 0;
+  private controlsDialog?: Phaser.GameObjects.DOMElement;
   private wishDialog?: Phaser.GameObjects.DOMElement;
   private isWishTransitioning = false;
   private isNarrationPlaying = false;
@@ -134,6 +135,8 @@ export class BootScene extends Phaser.Scene {
     this.bossHealthSegments = [];
     this.remoteWishRequestId += 1;
     this.remoteLevelRequestId += 1;
+    this.controlsDialog = undefined;
+    this.wishDialog = undefined;
     this.isNarrationPlaying = false;
     this.levelComplete = false;
     this.isWishTransitioning = false;
@@ -448,11 +451,16 @@ export class BootScene extends Phaser.Scene {
       .setDepth(10);
 
     this.createHealthBar();
-    this.openWishDialog();
+    this.openControlsCard();
   }
 
   public update(time: number): void {
-    if (this.isNarrationPlaying || this.levelComplete || this.wishDialog) {
+    if (
+      this.isNarrationPlaying ||
+      this.levelComplete ||
+      this.controlsDialog ||
+      this.wishDialog
+    ) {
       return;
     }
 
@@ -753,6 +761,72 @@ export class BootScene extends Phaser.Scene {
     );
     this.physics.add.existing(shrineTrigger, true);
     return shrineTrigger;
+  }
+
+  private openControlsCard(): void {
+    if (this.controlsDialog || this.wishDialog || this.levelTwoPlan) {
+      return;
+    }
+
+    this.physics.pause();
+    this.input.keyboard?.removeCapture(gameplayKeyCodes);
+    this.statusText?.setText("Learn the controls, then make a wish.");
+    this.controlsDialog = this.add
+      .dom(gameWidth / 2, gameHeight / 2)
+      .createFromHTML(`
+        <form class="wish-dialog controls-card" aria-label="Game controls">
+          <label>CONTROLS</label>
+          <ul class="controls-list">
+            <li><span>Arrows</span> run</li>
+            <li><span>Up / Space</span> jump</li>
+            <li><span>X</span> attack</li>
+            <li><span>F</span> heal with charge</li>
+            <li><span>C</span> air dash, if granted</li>
+          </ul>
+          <p>Type a wish next. AI builds the outdoor map and dungeon from scratch.</p>
+          <button type="submit">CONTINUE</button>
+        </form>
+      `)
+      .setScrollFactor(0)
+      .setDepth(30)
+      .setAlpha(0)
+      .setScale(0.72);
+
+    this.tweens.add({
+      targets: this.controlsDialog,
+      alpha: 1,
+      scale: 1,
+      duration: 240,
+      ease: "Back.Out",
+    });
+
+    const form = this.controlsDialog.node.querySelector("form");
+    const button = this.controlsDialog.node.querySelector("button");
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.closeControlsCard();
+    });
+    this.time.delayedCall(180, () => (button as HTMLButtonElement | null)?.focus());
+  }
+
+  private closeControlsCard(): void {
+    if (!this.controlsDialog) {
+      return;
+    }
+
+    const dialog = this.controlsDialog;
+    this.controlsDialog = undefined;
+    this.tweens.add({
+      targets: dialog,
+      alpha: 0,
+      scale: 0.78,
+      duration: 160,
+      ease: "Back.In",
+      onComplete: () => {
+        dialog.destroy();
+        this.openWishDialog();
+      },
+    });
   }
 
   private openWishDialog(): void {

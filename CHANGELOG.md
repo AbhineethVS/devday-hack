@@ -4,6 +4,33 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-11T07:32:00+05:30 — Controls card and live demo URL
+
+- Changed: Added a pre-game controls card before the wish dialog, linked the
+  live Render demo at the top of the README, and recorded the same URL in
+  `SUBMISSION.md`.
+- Why: Players need controls explained before play starts, and judges need the
+  deployed demo immediately.
+- Affected: `src/game/scenes/BootScene.ts`, `src/style.css`, `README.md`,
+  `SUBMISSION.md`, `CHANGELOG.md`, and `AI_USAGE.md`.
+- Validation: `npm run build` passed with the existing Phaser chunk-size warning.
+- Limitations: Controls card appears only on the Level 1 opening path, not when
+  restarting already-generated adventure scenes.
+
+## 2026-10-11T07:30:32+05:30 — Refresh README screenshots and AI pitch
+
+- Changed: Replaced README screenshots with three live AI stage captures,
+  highlighted that OpenAI builds both the outdoor and dungeon levels from
+  scratch, and aligned the submission short description and demo walkthrough.
+- Why: Show judges real AI-authored levels and make the dual-level generation
+  claim obvious in the first screen of the README.
+- Affected: `README.md`, `SUBMISSION.md`, `docs/screenshots/`, `CHANGELOG.md`,
+  and `AI_USAGE.md`.
+- Validation: Confirmed the three new PNGs exist under `docs/screenshots/` and
+  that old screenshot filenames were removed.
+- Limitations: Captures show outdoor AI stages and the wish hero; dungeon
+  footage is still described in prose rather than a fourth screenshot.
+
 ## 2026-10-11T07:20:00+05:30 — Polish README with screenshots
 
 - Changed: Replaced the long README with a short project-focused version,

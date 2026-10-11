@@ -1,20 +1,25 @@
 # Wishbound
 
+**Live demo:** [https://wishbound-vuhq.onrender.com/](https://wishbound-vuhq.onrender.com/)
+
 Type a wish. Walk through a portal. The next world changes.
 
-Wishbound is a small pixel-art platformer made for DevDay Exchange Community Hackathon: Kochi. Level 1 is handcrafted. After the wish, OpenAI generates the next outdoor route, a dungeon, an encounter, a short narration, and a wish-themed hero image. The game engine still controls all movement, combat, physics, health, and validation.
+Wishbound is a small pixel-art platformer made for DevDay Exchange Community Hackathon: Kochi. After you make a wish, **OpenAI builds both playable levels completely from scratch** — a full outdoor route and a linked dungeon — including terrain, scenery, enemies, portals, encounter type, short narration, a safe power preset, and a wish-themed hero image. Phaser still owns movement, combat, physics, health, and validation. Nothing the model returns can change those rules.
 
-![Wish dialog](docs/screenshots/wishbound-opening.png)
+![AI outdoor stage with wish hero](docs/screenshots/wishbound-ai-outdoor.png)
 
-![Level 1](docs/screenshots/wishbound-level-one.png)
+![AI outdoor platforms and water from scratch](docs/screenshots/wishbound-ai-platforms.png)
+
+![AI outdoor layout with placed enemies](docs/screenshots/wishbound-ai-encounter.png)
 
 ## What It Does
 
 - Player makes a natural-language wish.
-- AI builds a safe Level 2 outdoor map and one linked dungeon.
-- AI chooses a safe power preset, such as fast car, parachute fall, jetpack dash, armor, or heavy attack.
-- AI generates one transparent pixel-art hero image for Level 2 onward.
-- Dungeon ends with Orc waves or one giant Orc boss.
+- AI authors two levels from scratch: the outdoor map and the dungeon.
+- Outdoor includes platforms, water, bridges, trees, flowers, clouds, enemies, and the dungeon entrance.
+- Dungeon includes stone rooms, torches, and either Orc waves or one giant Orc boss.
+- AI chooses a safe power preset, such as fast run, double jump, air dash, slow fall, armor, or heavy attack.
+- AI generates one transparent pixel-art hero image for the wish-built stages.
 - The exit portal unlocks only after the encounter is cleared.
 
 ## Controls
